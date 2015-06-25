@@ -2,6 +2,8 @@
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
+objects += arch-setup.o
+
 all: loader.img loader.bin
 
 #usr.img
@@ -47,8 +49,8 @@ lzloader.elf: loader-stripped.elf.lz.o fastlz/lzloader.o arch/x64/lzloader.ld \
 	-T $(src)/arch/x64/lzloader.ld \
 	$(patsubst %.o,$(out)/%.o, $(filter %.o, $^)), LD $@)
 
-loader.elf: boot.o loader.ld loader.o runtime.o $(drivers) \
-	$(objects) dummy-shlib.so bootfs.bin
+loader.elf: boot.o loader.ld loader.o $(drivers) \
+	$(objects)
 	$(call quiet, $(LD) -o $@ \
 		-Bdynamic --export-dynamic --eh-frame-hdr --enable-new-dtags \
 	    $(filter-out %.bin, $(^:%.ld=-T %.ld)) \
@@ -59,6 +61,8 @@ loader.elf: boot.o loader.ld loader.o runtime.o $(drivers) \
 		LD $@)
 
 # rules
+
+autodepend = -MD -MT $@ -MP
 
 makedir = $(call very-quiet, mkdir -p $(dir $@))
 build-cxx = $(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -90,3 +94,18 @@ q-adjust-deps = $(call very-quiet, $(adjust-deps))
 	$(makedir)
 	$(q-build-s)
 
+INCLUDES = $(local-includes) -Iarch/$(arch) -I. -Iinclude  -Iarch/common
+INCLUDES += -isystem include/glibc-compat
+EXTRA_FLAGS = -D__OSV_CORE__ -DOSV_KERNEL_BASE=$(kernel_base)
+EXTRA_LIBS =
+COMMON = $(autodepend) -g -Wall -Wno-pointer-arith $(CFLAGS_WERROR) -Wformat=0 -Wno-format-security \
+	-D __BSD_VISIBLE=1 -U _FORTIFY_SOURCE -fno-stack-protector $(INCLUDES) \
+	$(kernel-defines) \
+	-fno-omit-frame-pointer $(compiler-specific) \
+	-include compiler/include/intrinsics.hh \
+	$(do-sys-includes) \
+	$(arch-cflags) $(conf-opt) $(acpi-defines) $(tracing-flags) $(gcc-sysroot) \
+	$(configuration) -D__OSV__ -D__XEN_INTERFACE_VERSION__="0x00030207" -DARCH_STRING=$(ARCH_STR) $(EXTRA_FLAGS)
+
+CXXFLAGS = -std=gnu++11 $(COMMON)
+CFLAGS = -std=gnu99 $(COMMON)
