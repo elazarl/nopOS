@@ -9,9 +9,10 @@ tmp = 0x80000
 bootsect = 0x7c00
 cmdline = 0x7e00
 target =  0x1800000
-lzentry = 24+target
-loader = 0x200000
-entry = loader+24
+elf_entry_point_header_offset = 0x18
+lzentry = target+elf_entry_point_header_offset
+loader = 0x200000 # OSV_KERNEL_BASE
+entry = loader+elf_entry_point_header_offset
 
 mb_info = 0x1000
 // OSv information lays in the end of this struct, which is 88 bytes in size.
@@ -32,6 +33,8 @@ start:
 
 # Be conservative, we should not be in the 10th byte so far, but better safe than sorry
 .org 0x10
+# count32 will be overwritten by imgedit.py setsize <int>,
+# to specify the exact loader size after it is compiled
 count32: .short 4096 # in 32k units, 4096=128MB
 
 int1342_struct:
@@ -93,7 +96,7 @@ read_disk:
     ljmp $8, $1f
 1:
     .code32
-    mov $0x10, %ax
+        mov $0x10, %ax
     mov %eax, %ds
     mov %eax, %es
     mov $tmp, %esi
@@ -170,7 +173,7 @@ done_e820:
 .org 0x1de
 .space 16, 0
 
-.org 0x1ee,
+.org 0x1ee
 .space 16, 0
 
 .org 0x1fe

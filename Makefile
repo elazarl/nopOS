@@ -1,4 +1,5 @@
 
+STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
@@ -7,6 +8,8 @@ very-quiet = $(if $V, $1, @$1)
 all: loader.img loader.bin
 
 #usr.img
+
+image-size = $(shell stat --printf %s lzloader.elf)
 
 boot.bin: boot16.ld boot16.o
 	$(call quiet, $(LD) -o $@ -T $^, LD $@)
@@ -17,7 +20,7 @@ loader-stripped.elf: loader.elf
 
 loader.img: boot.bin lzloader.elf
 	$(call quiet, dd if=boot.bin of=$@ > /dev/null 2>&1, DD $@ boot.bin)
-	$(call quiet, dd if=lzloader.elf of=$@ conv=notrunc seek=128 > /dev/null 2>&1, \
+	$(call quiet, cat lzloader.elf /dev/zero|dd count=`python -c 'print max(192, ($(image-size)-1)/512+1)'` of=$@ conv=notrunc seek=128 > /dev/null 2>&1, \
 		DD $@ lzloader.elf)
 	$(call quiet, ./scripts/imgedit.py setsize $@ $(image-size), IMGEDIT $@)
 	$(call quiet, ./scripts/imgedit.py setargs $@ $(cmdline), IMGEDIT $@)

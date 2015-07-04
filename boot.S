@@ -67,6 +67,7 @@ interrupt_stack_top = .
 
 .globl start32
 start32:
+    # boot16.S set %eax to ELF start address, we'll use it later
     mov %eax, %ebp
     lgdt gdt_desc
     mov $0x10, %eax
@@ -101,6 +102,7 @@ start64:
     xor %eax, %eax
     rep stosb
     mov %rbp, elf_header
+    # %ebx is set by boot16.S before running the loader
     mov %rbx, osv_multiboot_info
     lea init_stack_top, %rsp
     call premain
@@ -134,6 +136,7 @@ smpboot:
     mov %eax, %cr3
     mov smpboot_efer-smpboot, %eax
     mov smpboot_efer+4-smpboot, %edx
+    btr $10, %eax
     mov $0xc0000080, %ecx
     wrmsr
     mov smpboot_cr0-smpboot, %eax
