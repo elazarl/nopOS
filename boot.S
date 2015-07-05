@@ -96,6 +96,16 @@ start64:
     .cfi_startproc simple
     .cfi_def_cfa %rsp, 0
     .cfi_undefined %rip
+# This infinite loop is added for debugging purposes
+# run the VM, break it with gdb, set breakpoints, and
+# then
+# (gdb) set $eax = 0xfeed
+# (gdb) c
+# Otherwise - you'll have problem with connecting to
+# QEMU as i8086, and debugging the i386:x64-32 machine
+loop:
+    cmp $0xfeed, %eax
+    jne loop
     lea .bss, %rdi
     lea .edata, %rcx
     sub %rdi, %rcx
