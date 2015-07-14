@@ -3,7 +3,7 @@
 set -e
 qemu-system-x86_64 -snapshot -hda loader.img -s&
 QEMU="$!"
-sleep 1 # sleep enough time to get QEMU to x64 mode
+sleep 8 # sleep enough time to get QEMU to x64 mode
 ps --pid $QEMU >/dev/null
 kill_gently() {
 	kill $1 && return

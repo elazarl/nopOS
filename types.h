@@ -5,8 +5,7 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#ifndef _OSV_TYPES_H_
-#define _OSV_TYPES_H_ 1
+#pragma once
 
 #include <stdint.h>
 
@@ -21,4 +20,3 @@ typedef int64_t s64;
 
 typedef unsigned long ulong;
 
-#endif /* _OSV_TYPES_H_ */

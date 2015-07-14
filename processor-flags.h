@@ -1,5 +1,4 @@
-#ifndef OSV_X64_PROCESSOR_FLAGS_H
-#define OSV_X64_PROCESSOR_FLAGS_H
+#pragma
 
 #define X86_CR0_PE		(1 << 0)
 #define X86_CR0_MP		(1 << 1)
@@ -31,4 +30,3 @@
 #define X86_CR4_OSXSAVE		(1 << 18)
 #define X86_CR4_SMEP		(1 << 20)
 
-#endif

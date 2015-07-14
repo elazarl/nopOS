@@ -7,6 +7,7 @@
 
 #include <cctype>
 #include "types.h"
+#include "console.hh"
 
 extern "C" {
     void premain();
@@ -20,6 +21,9 @@ extern "C" {
 
 void premain()
 {
+    isa_serial_console_early_init();
+    debug_early("miniOSV\n");
+    debug_early("woo hoo!\n");
     //arch_init_early_console();
 #define OSV_VERSION "0"
     /* besides reporting the OSV version, this string has the function
