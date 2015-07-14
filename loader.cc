@@ -24,6 +24,11 @@ void premain()
     isa_serial_console_early_init();
     debug_early("miniOSV\n");
     debug_early("woo hoo!\n");
+    for (;;) {
+        u8 b = isa_serial_console_readch();
+        isa_serial_console_putchar(b);
+        if (b == '\r') isa_serial_console_putchar('\n');
+    }
     //arch_init_early_console();
 #define OSV_VERSION "0"
     /* besides reporting the OSV version, this string has the function
