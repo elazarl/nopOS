@@ -8,6 +8,8 @@
 #ifndef ARCH_MMU_HH_
 #define ARCH_MMU_HH_
 
+#include <cassert>
+
 namespace mmu {
 extern uint8_t phys_bits, virt_bits;
 constexpr uint8_t rsvd_bits_used = 1;

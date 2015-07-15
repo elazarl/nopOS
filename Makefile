@@ -4,11 +4,12 @@ STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
-objects += $(OUT)/console.o
+objects += $(OUT)/console.o $(OUT)/runtime.o $(OUT)/libc.o
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
 
-#usr.img
+clean:
+	rm -rf $(OUT)
 
 image-size = $(shell stat --printf %s $(OUT)/lzloader.elf)
 
@@ -57,7 +58,7 @@ $(OUT)/loader.elf: $(OUT)/boot.o loader.ld $(OUT)/loader.o $(drivers) \
 		-Bdynamic --export-dynamic --eh-frame-hdr --enable-new-dtags \
 	    $(filter-out %.bin, $(^:%.ld=-T %.ld)) \
 	    --whole-archive \
-	      $(libstdc++.a) $(libgcc_s.a) $(libgcc_eh.a) \
+	      $(libstdc++.a) $(libgcc.a) $(libgcc_eh.a) \
 	      $(boost-libs) \
 	    --no-whole-archive, \
 		LD $@)
@@ -113,5 +114,42 @@ COMMON = $(autodepend) -g -Wall -Wno-pointer-arith $(CFLAGS_WERROR) -Wformat=0 -
 CXXFLAGS = -std=gnu++11 $(COMMON)
 CFLAGS = -std=gnu99 $(COMMON)
 
-clean:
-	rm -rf $(OUT)
+# libs
+libgcc.a := $(shell $(CC) -print-libgcc-file-name)
+ifeq ($(filter /%,$(libgcc.a)),)
+	$(error Error: libgcc.a needs to be installed.)
+endif
+
+libgcc_eh.a := $(shell $(CC) -print-file-name=libgcc_eh.a)
+ifeq ($(filter /%,$(libgcc_eh.a)),)
+	$(error Error: libgcc_eh.a needs to be installed.)
+endif
+
+libstdc++.a := $(shell $(CXX) -print-file-name=libstdc++.a)
+ifeq ($(filter /%,$(libstdc++.a)),)
+	$(error Error: libstdc++.a needs to be installed.)
+endif
+
+libsupc++.a := $(shell $(CXX) -print-file-name=libsupc++.a)
+ifeq ($(filter /%,$(libsupc++.a)),)
+	$(error Error: libsupc++.a needs to be installed.)
+endif
+
+# link with -mt if present, else the base version (and hope it is multithreaded)
+boost-mt := -mt
+boost-lib-dir := $(dir $(shell $(CC) --print-file-name libboost_system$(boost-mt).a))
+ifeq ($(filter /%,$(boost-lib-dir)),)
+	boost-mt :=
+	boost-lib-dir := $(dir $(shell $(CC) --print-file-name libboost_system$(boost-mt).a))
+	ifeq ($(filter /%,$(boost-lib-dir)),)
+		$(error Error: libboost_system.a needs to be installed.)
+	endif
+endif
+# When boost_env=host, we won't use "-nostdinc", so the build machine's
+# header files will be used normally. So we don't need to add anything
+# special for Boost.
+boost-includes =
+
+boost-libs := $(boost-lib-dir)/libboost_program_options$(boost-mt).a \
+              $(boost-lib-dir)/libboost_system$(boost-mt).a
+

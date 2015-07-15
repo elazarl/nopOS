@@ -8,10 +8,12 @@
 #ifndef MMU_DEFS_HH
 #define MMU_DEFS_HH
 
+#include "types.h"
+#include <type_traits>
+#include <stddef.h>
 #include <stdint.h>
 #include <atomic>
-#include <osv/rcu.hh>
-#include <osv/virt_to_phys.hh>
+#include "virt_to_phys.hh"
 
 struct exception_frame;
 

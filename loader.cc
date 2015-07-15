@@ -8,6 +8,7 @@
 #include <cctype>
 #include "types.h"
 #include "console.hh"
+#include "mmu.hh"
 
 extern "C" {
     void premain();
@@ -24,6 +25,8 @@ void premain()
     isa_serial_console_early_init();
     debug_early("miniOSV\n");
     debug_early("woo hoo!\n");
+
+
     for (;;) {
         u8 b = isa_serial_console_readch();
         isa_serial_console_putchar(b);

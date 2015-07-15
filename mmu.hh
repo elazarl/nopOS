@@ -8,18 +8,16 @@
 #ifndef MMU_HH
 #define MMU_HH
 
-#include "fs/fs.hh"
 #include <stdint.h>
 #include <boost/intrusive/set.hpp>
-#include <osv/types.h>
+#include "types.h"
 #include <functional>
-#include <osv/error.h>
-#include <osv/addr_range.hh>
 #include <unordered_map>
 #include <memory>
-#include <osv/mmu-defs.hh>
-#include <osv/align.hh>
-#include <osv/trace.hh>
+#include "addr_range.hh"
+#include "error.h"
+#include "align.hh"
+#include "mmu-defs.hh"
 
 struct exception_frame;
 class balloon;
@@ -94,73 +92,6 @@ public:
     virtual void split(uintptr_t edge) override;
     virtual error sync(uintptr_t start, uintptr_t end) override;
 };
-
-class file_vma : public vma {
-public:
-    file_vma(addr_range range, unsigned perm, unsigned flags, fileref file, f_offset offset, page_allocator *page_ops);
-    ~file_vma();
-    virtual void split(uintptr_t edge) override;
-    virtual error sync(uintptr_t start, uintptr_t end) override;
-    virtual int validate_perm(unsigned perm);
-    virtual void fault(uintptr_t addr, exception_frame *ef) override;
-    fileref file() const { return _file; }
-    f_offset offset() const { return _offset; }
-private:
-    f_offset offset(uintptr_t addr);
-    fileref _file;
-    f_offset _offset;
-};
-
-ulong map_jvm(unsigned char* addr, size_t size, size_t align, balloon_ptr b);
-
-class jvm_balloon_vma : public vma {
-public:
-    jvm_balloon_vma(unsigned char *jvm_addr, uintptr_t start, uintptr_t end, balloon_ptr b, unsigned perm, unsigned flags);
-    virtual ~jvm_balloon_vma();
-    virtual void split(uintptr_t edge) override;
-    virtual error sync(uintptr_t start, uintptr_t end) override;
-    virtual void fault(uintptr_t addr, exception_frame *ef) override;
-    void detach_balloon();
-    unsigned char *jvm_addr() { return _jvm_addr; }
-    unsigned char *effective_jvm_addr() { return _effective_jvm_addr; }
-    bool add_partial(size_t partial, unsigned char *eff);
-    size_t partial() { return _partial_copy; }
-    // Iff we have a partial, the size may be temporarily changed. We keep it in a different
-    // variable so don't risk breaking any mmu core code that relies on the derived size()
-    // being the same.
-    uintptr_t real_size() const { return _real_size; }
-    friend ulong map_jvm(unsigned char* jvm_addr, size_t size, size_t align, balloon_ptr b);
-protected:
-    balloon_ptr _balloon;
-    unsigned char *_jvm_addr;
-private:
-    unsigned char *_effective_jvm_addr = nullptr;
-    uintptr_t _partial_addr = 0;
-    anon_vma *_partial_vma = nullptr;
-    size_t _partial_copy = 0;
-    unsigned _real_perm;
-    unsigned _real_flags;
-    uintptr_t _real_size;
-};
-
-class shm_file final : public special_file {
-    size_t _size;
-    std::unordered_map<uintptr_t, void*> _pages;
-    void* page(uintptr_t hp_off);
-public:
-    shm_file(size_t size, int flags);
-    virtual int stat(struct stat* buf) override;
-    virtual int close() override;
-    virtual std::unique_ptr<file_vma> mmap(addr_range range, unsigned flags, unsigned perm, off_t offset) override;
-
-    virtual bool map_page(uintptr_t offset, hw_ptep<0> ptep, pt_element<0> pte, bool write, bool shared) override;
-    virtual bool map_page(uintptr_t offset, hw_ptep<1> ptep, pt_element<1> pte, bool write, bool shared) override;
-    virtual bool put_page(void *addr, uintptr_t offset, hw_ptep<0> ptep) override;
-    virtual bool put_page(void *addr, uintptr_t offset, hw_ptep<1> ptep) override;
-};
-
-void* map_file(const void* addr, size_t size, unsigned flags, unsigned perm,
-              fileref file, f_offset offset);
 void* map_anon(const void* addr, size_t size, unsigned flags, unsigned perm);
 
 error munmap(const void* addr, size_t size);
@@ -170,9 +101,6 @@ error mincore(const void *addr, size_t length, unsigned char *vec);
 bool is_linear_mapped(const void *addr, size_t size);
 bool ismapped(const void *addr, size_t size);
 bool isreadable(void *addr, size_t size);
-std::unique_ptr<file_vma> default_file_mmap(file* file, addr_range range, unsigned flags, unsigned perm, off_t offset);
-std::unique_ptr<file_vma> map_file_mmap(file* file, addr_range range, unsigned flags, unsigned perm, off_t offset);
-
 
 template<int N>
 inline bool pte_is_cow(pt_element<N> pte)
@@ -185,8 +113,6 @@ inline bool pte_is_cow(pt_element<0> pte)
 {
     return pte.sw_bit(pte_cow); // only 4k pages can be cow for now
 }
-
-static TRACEPOINT(trace_clear_pte, "ptep=%p, cow=%d, pte=%x", void*, bool, uint64_t);
 
 template<int N>
 inline pt_element<N> clear_pte(hw_ptep<N> ptep)
@@ -262,6 +188,8 @@ inline bool write_pte(void *addr, hw_ptep<N> ptep, pt_element<N> pte)
 }
 
 pt_element<0> pte_mark_cow(pt_element<0> pte, bool cow);
+
+#define CONF_debug_memory true
 
 template <typename OutputFunc>
 inline
