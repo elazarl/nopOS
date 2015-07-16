@@ -8,6 +8,8 @@
 #ifndef STUBBING_HH_
 #define STUBBING_HH_
 
+#include <string>
+
 
 // debug_always() is like debug() but always shows the message on the console
 // regardless of whether the "verbose" option is enabled.

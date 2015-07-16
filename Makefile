@@ -4,7 +4,8 @@ STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
-objects += $(OUT)/console.o $(OUT)/runtime.o $(OUT)/libc.o
+objects += $(OUT)/console.o $(OUT)/runtime.o $(OUT)/string.o $(OUT)/mock.o
+include musl.mk
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
 
@@ -98,8 +99,10 @@ $(OUT)/%.o: %.s
 	$(q-build-s)
 
 ASFLAGS += -I$(OUT)
-INCLUDES = $(local-includes) -Iarch/$(arch) -I. -Iinclude  -Iarch/common
+INCLUDES = $(local-includes) -I. -Iinclude 
 INCLUDES += -isystem include/glibc-compat
+INCLUDES += -isystem include/api
+INCLUDES += -isystem include/api/x64
 EXTRA_FLAGS = -D__OSV_CORE__ -DOSV_KERNEL_BASE=$(kernel_base)
 EXTRA_LIBS =
 COMMON = $(autodepend) -g -Wall -Wno-pointer-arith $(CFLAGS_WERROR) -Wformat=0 -Wno-format-security \
@@ -112,7 +115,7 @@ COMMON = $(autodepend) -g -Wall -Wno-pointer-arith $(CFLAGS_WERROR) -Wformat=0 -
 	$(configuration) -D__OSV__ -D__XEN_INTERFACE_VERSION__="0x00030207" -DARCH_STRING=$(ARCH_STR) $(EXTRA_FLAGS)
 
 CXXFLAGS = -std=gnu++11 $(COMMON)
-CFLAGS = -std=gnu99 $(COMMON)
+CFLAGS += -std=gnu99 $(COMMON)
 
 # libs
 libgcc.a := $(shell $(CC) -print-libgcc-file-name)

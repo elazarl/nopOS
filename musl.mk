@@ -1,6 +1,11 @@
+# should be limited to files under libc/ eventually
+CFLAGS += -I libc/stdio -I libc/internal -I libc/arch/x64  \
+	-Wno-missing-braces -Wno-parentheses -Wno-unused-but-set-variable
 # libc has its own source dialect control
 $(OUT)/libc/%.o: source-dialects =
 $(OUT)/musl/%.o: source-dialects =
+
+$(OUT)/libc/multibyte/mbsrtowcs.o: CFLAGS += -Imusl/src/multibyte
 
 libc += internal/_chk_fail.o
 libc += internal/floatscan.o
@@ -426,18 +431,18 @@ musl += process/execv.o
 musl += process/execl.o
 libc += process/waitpid.o
 
-libc += arch/$(arch)/setjmp/setjmp.o
-libc += arch/$(arch)/setjmp/longjmp.o
-libc += arch/$(arch)/setjmp/sigrtmax.o
-libc += arch/$(arch)/setjmp/sigrtmin.o
-libc += arch/$(arch)/setjmp/siglongjmp.o
-libc += arch/$(arch)/setjmp/sigsetjmp.o
-libc += arch/$(arch)/setjmp/block.o
-ifeq ($(arch),x64)
-libc += arch/$(arch)/ucontext/getcontext.o
-libc += arch/$(arch)/ucontext/setcontext.o
-libc += arch/$(arch)/ucontext/start_context.o
-libc += arch/$(arch)/ucontext/ucontext.o
+libc += arch/x64/setjmp/setjmp.o
+libc += arch/x64/setjmp/longjmp.o
+libc += arch/x64/setjmp/sigrtmax.o
+libc += arch/x64/setjmp/sigrtmin.o
+libc += arch/x64/setjmp/siglongjmp.o
+libc += arch/x64/setjmp/sigsetjmp.o
+libc += arch/x64/setjmp/block.o
+ifeq (x64,x64)
+libc += arch/x64/ucontext/getcontext.o
+libc += arch/x64/ucontext/setcontext.o
+libc += arch/x64/ucontext/start_context.o
+libc += arch/x64/ucontext/ucontext.o
 endif
 
 musl += stdio/__fclose_ca.o
@@ -718,9 +723,9 @@ libc += time.o
 libc += signal.o
 libc += mman.o
 libc += sem.o
-libc += pipe_buffer.o
+#libc += pipe_buffer.o
 libc += pipe.o
-libc += af_local.o
+#libc += af_local.o
 libc += user.o
 libc += resource.o
 libc += mount.o
@@ -738,12 +743,10 @@ libc += mallopt.o
 
 libc += linux/makedev.o
 
-ifneq ($(musl_arch), notsup)
 musl += fenv/fegetexceptflag.o
 musl += fenv/feholdexcept.o
 musl += fenv/fesetexceptflag.o
-musl += fenv/$(musl_arch)/fenv.o
-endif
+musl += fenv/x86_64/fenv.o
 
 musl += crypt/crypt_blowfish.o
 musl += crypt/crypt.o
@@ -753,5 +756,5 @@ musl += crypt/crypt_r.o
 musl += crypt/crypt_sha256.o
 musl += crypt/crypt_sha512.o
 
-objects += $(addprefix libc/, $(libc))
-objects += $(addprefix musl/src/, $(musl))
+objects += $(addprefix $(OUT)/libc/, $(libc))
+objects += $(addprefix $(OUT)/musl/src/, $(musl))
