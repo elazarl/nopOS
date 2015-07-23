@@ -81,7 +81,7 @@ void premain()
     mmu::pml4e *pml4 = &cr3.PML4ptr()[511];
     mmu::init(pml4);
     pml4->PDPTptr(pagealloc());
-    mmu::pdpte *pdpt = pml4->PDPTptr();
+    mmu::pdpte *pdpt = pml4->PDPTptr()+4;
     mmu::init(pdpt->to_pd());
     pdpt->type(mmu::pdpt_type::PDPT_PD);
     pdpt->to_pd()->pd(pagealloc());
