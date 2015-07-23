@@ -6,9 +6,17 @@
  */
 
 #include <cctype>
+#include <cstdio>
 #include "types.h"
 #include "console.hh"
 #include "mmu.hh"
+#include <string.h>
+#include "arch-setup.hh"
+#include "processor.hh"
+#include "pagetable.hh"
+extern "C" {
+#include "printf.h"
+}
 
 extern "C" {
     void premain();
@@ -19,13 +27,57 @@ extern "C" {
     console::isa_serial_console::early_init();
 }*/
 
+void memcpy(void *_dst, void *_src, size_t sz) {
+    char *dst = reinterpret_cast<char *>(_dst);
+    char *src = reinterpret_cast<char *>(_src);
+    for (size_t i = 0; i < sz; i++) {
+        dst[i] = src[i];
+    }
+}
 
 void premain()
 {
     isa_serial_console_early_init();
     debug_early("miniOSV\n");
     debug_early("woo hoo!\n");
+    init_printf(nullptr, [](void *, char c) {
+        isa_serial_console_putchar(c);
+    });
 
+    static ulong edata;
+    asm ("movl $.edata, %0" : "=rm"(edata));
+    // copy to stack so we don't free it now
+    auto omb = *osv_multiboot_info;
+    auto mb = omb.mb;
+    char *e820_buffer = reinterpret_cast<char*>(alloca(mb.mmap_length));
+    auto e820_size = mb.mmap_length;
+    //char *mbe820 = reinterpret_cast<char*>(mb.mmap_addr);
+    memcpy(e820_buffer, reinterpret_cast<void*>(mb.mmap_addr), e820_size);
+    for_each_e820_entry(e820_buffer, e820_size, [] (e820ent ent) {
+        //printf((char *)"%x %x %d\n", ent.type, ent.addr, ent.size);
+    });
+    mmu::cr3 cr3{processor::read_cr3()};
+    printf((char*)"cr3:  ");cr3.print(printf);printf((char*)"\n");
+    mmu::pml4e *pml4 = cr3.PML4ptr();
+    for (int i{0}; i<512;i++) {
+        if (pml4[i].present == 0) continue;
+        pml4[i].print(printf);
+            printf((char*)"\n");
+        mmu::pdpte *pdpt = pml4[i].PDPTptr();
+        for (int j{0}; j<512; j++) {
+            if (pdpt[j].present() == 0) continue;
+            pdpt[j].print(printf);
+            printf((char*)"\n");
+            if (pdpt[j].type() == mmu::pdpt_type::PDPT_PD) {
+                mmu::pde *p = pdpt[j].to_pd().pd();
+                for (int k{0}; k<512; k++) {
+                    if (!p[k].present()) continue;
+                    p[k].print(printf);
+                    printf((char*)"\n");
+                }
+            }
+        }
+    }
 
     for (;;) {
         u8 b = isa_serial_console_readch();
@@ -56,45 +108,3 @@ int main(int ac, char **av)
 
 extern "C" { void smp_main(void) {} }
 
-
-void *elf_header;
-int __argc;
-char** __argv;
-
-struct multiboot_info_type {
-    u32 flags;
-    u32 mem_lower;
-    u32 mem_upper;
-    u32 boot_device;
-    u32 cmdline;
-    u32 mods_count;
-    u32 mods_addr;
-    u32 syms[4];
-    u32 mmap_length;
-    u32 mmap_addr;
-    u32 drives_length;
-    u32 drives_addr;
-    u32 config_table;
-    u32 boot_loader_name;
-    u32 apm_table;
-    u32 vbe_control_info;
-    u32 vbe_mode_info;
-    u16 vbe_mode;
-    u16 vbe_interface_seg;
-    u16 vbe_interface_off;
-    u16 vbe_interface_len;
-} __attribute__((packed));
-struct osv_multiboot_info_type {
-    struct multiboot_info_type mb;
-    u32 tsc_init, tsc_init_hi;
-    u32 tsc_disk_done, tsc_disk_done_hi;
-} __attribute__((packed));
-
-struct e820ent {
-    u32 ent_size;
-    u64 addr;
-    u64 size;
-    u32 type;
-} __attribute__((packed));
-
-osv_multiboot_info_type* osv_multiboot_info;

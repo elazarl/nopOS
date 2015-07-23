@@ -44,5 +44,4 @@ extern const std::string& features_str();
 
 }
 
-
 #endif /* CPUID_HH_ */

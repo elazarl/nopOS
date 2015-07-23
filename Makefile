@@ -4,7 +4,8 @@ STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
-objects += $(OUT)/console.o $(OUT)/runtime.o $(OUT)/string.o $(OUT)/mock.o
+objects += $(OUT)/console.o $(OUT)/runtime.o $(OUT)/string.o $(OUT)/mock.o \
+	   $(OUT)/arch-setup.o $(OUT)/printf.o
 include musl.mk
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
@@ -156,3 +157,4 @@ boost-includes =
 boost-libs := $(boost-lib-dir)/libboost_program_options$(boost-mt).a \
               $(boost-lib-dir)/libboost_system$(boost-mt).a
 
+-include $(OUT)/loader.d $(objects:.o=.d)
