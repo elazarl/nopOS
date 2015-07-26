@@ -1,1 +1,0 @@
-../../../musl/include/netinet/ip6.h

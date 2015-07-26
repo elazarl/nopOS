@@ -1,1 +1,0 @@
-../../../musl/include/netinet/icmp6.h

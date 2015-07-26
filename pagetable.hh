@@ -1,6 +1,7 @@
 #pragma once
 #include "types.h"
 
+extern "C" void tfp_printf(const char *fmt, ...);
 namespace mmu {
 // we assume no pcide
 struct u64_entry {
@@ -433,16 +434,15 @@ struct vaddr_1g {
 } __attribute__((packed));
 static_assert(sizeof(vaddr_1g) == 6, "vaddr is 64 bit");
 
-extern "C" void tfp_printf(char *fmt, ...);
 struct vaddr {
     vaddr(cr3 _cr3, pml4e *pml4, pdpte *pdpt, pde *pd, pte *pt, u64 offset) {
-        tfp_printf("pml4   %d\n", (pml4 - _cr3.PML4ptr()));
+        tfp_printf((char*)"pml4   %d\n", (pml4 - _cr3.PML4ptr()));
         _4k.PML4 = pml4 - _cr3.PML4ptr();
-        tfp_printf("dirPtr %d\n", (pdpt - pml4->PDPTptr()));
+        tfp_printf((char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
         _4k.directoryPtr = pdpt - pml4->PDPTptr();
-        tfp_printf("dir    %d\n", (pd - pdpt->to_pd()->pd()));
+        tfp_printf((char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
         _4k.directory = pd - pdpt->to_pd()->pd();
-        tfp_printf("table  %d\n", pt - pd->to_pt()->pt());
+        tfp_printf((char*)"table  %d\n", pt - pd->to_pt()->pt());
         _4k.table = pt - pd->to_pt()->pt();
         _4k.offset = offset;
         cannoncialize();

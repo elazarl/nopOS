@@ -5,11 +5,10 @@
  * BSD license as described in the LICENSE file in the top-level directory.
  */
 
-#include <cctype>
-#include <cstdio>
+#include <cassert>
+#include <alloca.h>
 #include "types.h"
 #include "console.hh"
-#include "mmu.hh"
 #include <string.h>
 #include "arch-setup.hh"
 #include "processor.hh"
@@ -26,6 +25,12 @@ extern "C" {
 {
     console::isa_serial_console::early_init();
 }*/
+
+void __assert_fail(const char * assertion, const char * file, unsigned int line, const char * function)
+{
+    printf("%s:%u:%d: %s\n", file, line, function, assertion);
+    __builtin_trap();
+}
 
 void memcpy(void *_dst, void *_src, size_t sz)
 {
@@ -101,7 +106,6 @@ void premain()
     printf("got %x\n", *virt.ptr());
     *virt.ptr() = 10;
     printf((char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
-    return;
 
     pml4 = cr3.PML4ptr();
     for (int i{0}; i<512;i++) {
@@ -132,8 +136,8 @@ void premain()
     printf((char*)"%x\n", virt.to_u64());
     printf((char*)"%x\n", virt._4k.directory);
 
-    processor::outw( 0xB004, 0x0 | 0x2000 );
-    processor::cli_hlt();
+    /*processor::outw( 0xB004, 0x0 | 0x2000 );
+    processor::cli_hlt();*/
     for (;;) {
         u8 b = isa_serial_console_readch();
         isa_serial_console_putchar(b);

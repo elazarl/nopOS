@@ -1,6 +1,5 @@
+#include <cstddef>
 #include "processor.hh"
-#include "mmu.hh"
-#include <string.h>
 
 void *elf_header;
 int __argc;
@@ -47,17 +46,6 @@ struct e820ent {
 } __attribute__((packed));
 
 osv_multiboot_info_type* osv_multiboot_info;
-
-void setup_temporary_phys_map()
-{
-    // duplicate 1:1 mapping into phys_mem
-    u64 cr3 = processor::read_cr3();
-    auto pt = reinterpret_cast<u64*>(cr3);
-    for (auto&& area : mmu::identity_mapped_areas) {
-        auto base = reinterpret_cast<void*>(get_mem_area_base(area));
-        pt[mmu::pt_index(base, 3)] = pt[0];
-    }
-}
 
 void for_each_e820_entry(void* e820_buffer, unsigned size, void (*f)(e820ent e))
 {
