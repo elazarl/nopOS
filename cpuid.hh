@@ -37,7 +37,7 @@ struct features_type {
     bool xen_pci;
 };
 
-extern const features_type& features();
+extern const features_type features();
 
 }
 

@@ -10,12 +10,13 @@
 #include "types.h"
 #include "console.hh"
 #include <string.h>
+#include "memory.hh"
 #include "arch-setup.hh"
+#include "arch-cpu.hh"
 #include "processor.hh"
 #include "pagetable.hh"
-extern "C" {
+#include "exceptions.hh"
 #include "printf.h"
-}
 
 extern "C" {
     void premain();
@@ -41,21 +42,13 @@ void memcpy(void *_dst, void *_src, size_t sz)
     }
 }
 
-void *_memset(void *p, int val, size_t sz)
+void *memset(void *p, int val, size_t sz)
 {
     char *dst = reinterpret_cast<char *>(p);
     for (size_t i =0; i<sz; i++) {
         dst[i] = val;
     }
     return p;
-}
-
-u8 *max_page_addr;
-
-u8 *pagealloc() {
-    max_page_addr -= 4096;
-    _memset(max_page_addr, 0, 4096);
-    return max_page_addr;
 }
 
 void premain()
@@ -69,6 +62,12 @@ void premain()
 
     static ulong edata;
     asm ("movl $.edata, %0" : "=rm"(edata));
+
+    sched::arch_cpu arch_cpu;
+    arch_cpu.init_on_cpu();
+    interrupt_descriptor_table tbl;
+    tbl.load_on_cpu();
+
     // copy to stack so we don't free it now
     auto omb = *osv_multiboot_info;
     auto mb = omb.mb;
@@ -78,25 +77,26 @@ void premain()
     memcpy(e820_buffer, reinterpret_cast<void*>(mb.mmap_addr), e820_size);
     for_each_e820_entry(e820_buffer, e820_size, [] (e820ent ent) {
         printf((char *)"%x %x %d\n", ent.type, ent.addr, ent.size);
-        max_page_addr = reinterpret_cast<u8 *>(ent.addr);
-        max_page_addr += ent.size;
+	memory::max_page_addr = reinterpret_cast<u8 *>(ent.addr);
+	memory::max_page_addr += ent.size;
     });
     mmu::cr3 cr3{processor::read_cr3()};
     printf((char*)"cr3:  ");cr3.print(printf);printf((char*)"\n");
     mmu::pml4e *pml4 = &cr3.PML4ptr()[511];
     mmu::init(pml4);
-    pml4->PDPTptr(pagealloc());
+    *reinterpret_cast<u8*>(0xfffffff100) = 1;
+    pml4->PDPTptr(memory::alloc_page());
     mmu::pdpte *pdpt = pml4->PDPTptr()+4;
     mmu::init(pdpt->to_pd());
     pdpt->type(mmu::pdpt_type::PDPT_PD);
-    pdpt->to_pd()->pd(pagealloc());
+    pdpt->to_pd()->pd(memory::alloc_page());
     mmu::pde *pd = pdpt->to_pd()->pd();
     mmu::init(pd->to_pt());
     pd->type(mmu::pd_type::PD_PT);
-    pd->to_pt()->pt(pagealloc());
+    pd->to_pt()->pt(memory::alloc_page());
     mmu::pte *pt = pd->to_pt()->pt();
     mmu::init(pt);
-    pt->page(pagealloc());
+    pt->page(memory::alloc_page());
 
     u8 *phys = reinterpret_cast<u8 *>(0x7ffa000);
     *phys = 0xFA;
@@ -136,7 +136,8 @@ void premain()
     printf((char*)"%x\n", virt.to_u64());
     printf((char*)"%x\n", virt._4k.directory);
 
-    /*processor::outw( 0xB004, 0x0 | 0x2000 );
+    /*int baseio = 0xb100;
+    processor::outw(baseio+4, 0x0 | 0x2000 );
     processor::cli_hlt();*/
     for (;;) {
         u8 b = isa_serial_console_readch();

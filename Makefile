@@ -4,7 +4,9 @@ STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
-objects += $(OUT)/console.o $(OUT)/arch-setup.o $(OUT)/printf.o
+objects += $(OUT)/console.o $(OUT)/arch-setup.o $(OUT)/printf.o $(OUT)/entry.o \
+	   $(OUT)/exceptions.o $(OUT)/arch-cpu.o $(OUT)/memory.o $(OUT)/cpuid.o \
+	   $(OUT)/xen.o $(OUT)/entry-xen.o
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
 
