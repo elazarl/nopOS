@@ -136,7 +136,7 @@ void general_protection(exception_frame* ef)
 extern "C" void abort() { __builtin_abort(); }
 
 #define DUMMY_HANDLER(x) \
-     extern "C" void x(exception_frame* ef); void x(exception_frame *ef) { printf("%s\n", #x); abort(); }
+     extern "C" void x(exception_frame* ef); void x(exception_frame *ef) { printf("%s\n", #x); for(;;); abort(); }
 
 DUMMY_HANDLER(debug_exception)
 DUMMY_HANDLER(breakpoint)
