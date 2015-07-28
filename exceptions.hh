@@ -12,6 +12,74 @@
 #include <functional>
 #include "types.h"
 
+struct error_code {
+    // External event (bit 0) — When set, indicates that the exception occurred during delivery of an
+    //event external to the program, such as an interrupt or an earlier exception.
+    unsigned ext : 1;
+    // Descriptor location (bit 1) — When set, indicates that the index portion of the error code refers
+    // to a gate descriptor in the IDT; when clear, indicates that the index refers to a descriptor in the GDT
+    // or the current LDT.
+    unsigned idt : 1;
+    // GDT/LDT (bit 2) — Only used when the IDT flag is clear. When set, the TI flag indicates that the
+    // index portion of the error code refers to a segment or gate descriptor in the LDT; when clear, it indi-
+    // cates that the index refers to a descriptor in the current GDT.
+    unsigned ti : 1;
+    unsigned segment_selector_index : 13;
+} __attribute__((packed));
+
+struct page_fault_error_code {
+    // This flag is 0 if there is no translation for the linear address because the P flag was 0 in one of the paging-
+    // structure entries used to translate that address.
+    unsigned p : 1;
+    // If the access causing the page-fault exception was a write, this flag is 1; otherwise, it is 0. This flag
+    // describes the access causing the page-fault exception, not the access rights specified by paging.
+    unsigned wr : 1;
+    // If a user-mode access caused the page-fault exception, this flag is 1; it is 0 if a supervisor-mode access did
+    // so. This flag describes the access causing the page-fault exception, not the access rights specified by
+    // paging.
+    unsigned us : 1;
+    // This flag is 1 if there is no translation for the linear address because a reserved bit was set in one of the
+    // paging-structure entries used to translate that address.
+    unsigned rsvd : 1;
+    // This flag is 1 if the access causing the page-fault exception was an instruction fetch. This flag describes the
+    // access causing the page-fault exception, not the access rights specified by paging.
+    unsigned id : 1;
+    // This flag is 1 if the access causing the page-fault exception was a data access to a user-mode address with
+    // protection key disallowed by the value of the PKRU register.
+    unsigned pk : 1;
+} __attribute__((packed));
+
+struct exception_frame {
+    ulong r15;
+    ulong r14;
+    ulong r13;
+    ulong r12;
+    ulong r11;
+    ulong r10;
+    ulong r9;
+    ulong r8;
+    ulong rbp;
+    ulong rdi;
+    ulong rsi;
+    ulong rdx;
+    ulong rcx;
+    ulong rbx;
+    ulong rax;
+    union {
+        error_code regular;
+        page_fault_error_code page_fault;
+    } _error_code;
+    ulong rip;
+    ulong cs;
+    ulong rflags;
+    ulong rsp;
+    ulong ss;
+
+    void *get_pc(void) { return (void*)rip; }
+    error_code get_error(void) { return _error_code.regular; }
+    page_fault_error_code get_page_fault_error(void) { return _error_code.page_fault; }
+};
+
 class gsi_edge_interrupt;
 class exception_frame;
 

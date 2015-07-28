@@ -2,35 +2,8 @@
 #define _MEMCPY_DECODE_HH
 
 #include "types.h"
+#include "exceptions.hh"
 #include <algorithm>
-
-struct exception_frame {
-    ulong r15;
-    ulong r14;
-    ulong r13;
-    ulong r12;
-    ulong r11;
-    ulong r10;
-    ulong r9;
-    ulong r8;
-    ulong rbp;
-    ulong rdi;
-    ulong rsi;
-    ulong rdx;
-    ulong rcx;
-    ulong rbx;
-    ulong rax;
-    u16 error_code;
-    ulong rip;
-    ulong cs;
-    ulong rflags;
-    ulong rsp;
-    ulong ss;
-
-    void *get_pc(void) { return (void*)rip; }
-    unsigned int get_error(void) { return error_code; }
-};
-
 
 typedef void (*fixup_function)(exception_frame *ef, size_t fixup);
 class memcpy_decoder {

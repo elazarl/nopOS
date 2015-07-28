@@ -34,6 +34,7 @@
 	pushq_cfi %r14
 	pushq_cfi %r15
 	mov %rsp, %rdi
+    mov 120(%rsp), %rsi # 15 pushes of 8 each
 	subq $8, %rsp # 16-byte alignment
 	.cfi_adjust_cfa_offset 8
 	call \handler

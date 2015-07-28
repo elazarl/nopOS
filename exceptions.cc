@@ -101,10 +101,11 @@ unsigned interrupt_descriptor_table::register_handler(std::function<void ()> pos
 }
 
 
-extern "C" { void interrupt(exception_frame* frame); }
+extern "C" { void interrupt(exception_frame* frame, int vec); }
 
-void interrupt(exception_frame* frame)
+void interrupt(exception_frame* frame, int vec)
 {
+    printf("vec=%d\n", vec);
 }
 
 bool fixup_fault(exception_frame* ef)
@@ -136,7 +137,10 @@ void general_protection(exception_frame* ef)
 extern "C" void abort() { __builtin_abort(); }
 
 #define DUMMY_HANDLER(x) \
-     extern "C" void x(exception_frame* ef); void x(exception_frame *ef) { printf("%s\n", #x); for(;;); abort(); }
+     extern "C" void x(exception_frame* ef); void x(exception_frame *ef) { \
+         page_fault_error_code e = ef->get_page_fault_error(); \
+         printf("%s P%d WR%d US%d RSVD%d ID%d PK%d\n", #x, e.p, e.wr, e.us, e.rsvd, e.id, e.pk);\
+         for(;;); abort(); }
 
 DUMMY_HANDLER(debug_exception)
 DUMMY_HANDLER(breakpoint)

@@ -6,7 +6,7 @@ very-quiet = $(if $V, $1, @$1)
 
 objects += $(OUT)/console.o $(OUT)/arch-setup.o $(OUT)/printf.o $(OUT)/entry.o \
 	   $(OUT)/exceptions.o $(OUT)/arch-cpu.o $(OUT)/memory.o $(OUT)/cpuid.o \
-	   $(OUT)/xen.o $(OUT)/entry-xen.o
+	   $(OUT)/xen.o $(OUT)/entry-xen.o $(OUT)/pci.o #$(OUT)/acpi.o
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
 
@@ -14,6 +14,8 @@ clean:
 	rm -rf $(OUT)
 
 image-size = $(shell stat --printf %s $(OUT)/lzloader.elf)
+
+$(OUT)/acpi.o: CXXFLAGS += -I ./acpica/source/include
 
 $(OUT)/boot.bin: boot16.ld $(OUT)/boot16.o
 	$(call quiet, $(LD) -o $@ -T $^, LD $@)

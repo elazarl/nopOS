@@ -42,6 +42,7 @@ struct arch_cpu {
     // The per-CPU exception stack is used for nested exceptions.
     static constexpr unsigned nr_exception_stacks = 2;
     char percpu_exception_stack[nr_exception_stacks][4096] __attribute__((aligned(16)));
+    char percpu_interrupt_stack[nr_exception_stacks][4096] __attribute__((aligned(16)));
     u32 apic_id;
     u32 acpi_id;
     u64 gdt[nr_gdt];
@@ -111,6 +112,7 @@ inline arch_cpu::arch_cpu()
     gdt[gdt_tssx] = tss_addr >> 32;
     // Use the per-CPU stack for early boot faults.
     set_exception_stack(percpu_exception_stack[0], sizeof(percpu_exception_stack[0]));
+    set_ist_entry(2, (char *)percpu_interrupt_stack, sizeof(percpu_interrupt_stack));
 }
 
 inline void arch_cpu::set_ist_entry(unsigned ist, char* base, size_t size)
