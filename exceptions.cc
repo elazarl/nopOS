@@ -103,9 +103,22 @@ unsigned interrupt_descriptor_table::register_handler(std::function<void ()> pos
 
 extern "C" { void interrupt(exception_frame* frame, int vec); }
 
+interrupts::fn interrupt_fn[256];
+
 void interrupt(exception_frame* frame, int vec)
 {
-    printf("vec=%d\n", vec);
+    if (interrupt_fn[vec] != nullptr)
+        interrupt_fn[vec]();
+
+}
+
+namespace interrupts {
+bool is_registered(int vec) {
+    return interrupt_fn[vec] == nullptr;
+}
+void register_fn(int vec, fn f) {
+    interrupt_fn[vec] = f;
+}
 }
 
 bool fixup_fault(exception_frame* ef)

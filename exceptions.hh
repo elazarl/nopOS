@@ -137,4 +137,10 @@ extern "C" {
 
 bool fixup_fault(exception_frame*);
 
+namespace interrupts {
+typedef void (*fn)();
+bool is_registered(int vec);
+void register_fn(int vec, fn f);
+}
+
 #endif
