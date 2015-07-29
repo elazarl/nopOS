@@ -72,7 +72,6 @@ void premain()
     tbl.load_on_cpu();
     asm volatile ("int $50");
     asm volatile ("int $51");
-    return;
 
     // copy to stack so we don't free it now
     auto omb = *osv_multiboot_info;

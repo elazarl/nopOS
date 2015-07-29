@@ -4,9 +4,10 @@ STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
-objects += $(OUT)/console.o $(OUT)/arch-setup.o $(OUT)/printf.o $(OUT)/entry.o \
-	   $(OUT)/exceptions.o $(OUT)/arch-cpu.o $(OUT)/memory.o $(OUT)/cpuid.o \
-	   $(OUT)/xen.o $(OUT)/entry-xen.o $(OUT)/pci.o #$(OUT)/acpi.o
+_objects += console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
+	   xen.o entry-xen.o pci.o clock.o runtime.o #acpi.o
+
+objects = $(_objects:%=$(OUT)/%)
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
 
@@ -117,7 +118,7 @@ COMMON = $(autodepend) -g -Wall -Wno-pointer-arith $(CFLAGS_WERROR) -Wformat=0 -
 	$(arch-cflags) $(conf-opt) $(acpi-defines) $(tracing-flags) $(gcc-sysroot) \
 	$(configuration) -D__OSV__ -D__XEN_INTERFACE_VERSION__="0x00030207" -DARCH_STRING=$(ARCH_STR) $(EXTRA_FLAGS)
 
-CXXFLAGS = -std=gnu++11 $(COMMON)
+CXXFLAGS = -fno-rtti -fno-exceptions -std=gnu++11 $(COMMON)
 CFLAGS += -std=gnu99 $(COMMON)
 
 -include $(OUT)/loader.d $(objects:.o=.d)
