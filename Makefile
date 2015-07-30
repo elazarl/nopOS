@@ -1,13 +1,34 @@
+# Delete the builtin make rules, as if "make -r" was used.
+.SUFFIXES:
+
+# Ask make to not delete "intermediate" results, such as the .o in the chain
+# .cc -> .o -> .so. Otherwise, during the first build, make considers the .o
+# to be intermediate, and deletes it, but the newly-created ".d" files lists
+# the ".o" as a target - so it needs to be created again on the second make.
+# See commit fac05c95 for a longer explanation.
+.SECONDARY:
+
+# Deleting partially-build targets on error should be the default, but it
+# isn't, for historical reasons, so we need to turn it on explicitly...
+.DELETE_ON_ERROR:
 
 OUT=out
 STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
-_objects += console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
-	   xen.o entry-xen.o pci.o clock.o runtime.o #acpi.o
+include acpi.mk
+acpi = $(patsubst %.c, %.o, $(acpi-source))
+acpi-defines = -DACPI_MACHINE_WIDTH=64 -DACPI_USE_LOCAL_CACHE
+acpi-objects = $(acpi:%=$(OUT)/%)
+$(acpi-objects): CFLAGS += -I acpica/source/include -fno-strict-aliasing -Wno-strict-aliasing
 
-objects = $(_objects:%=$(OUT)/%)
+objects += $(acpi-objects)
+
+_objects += print.o console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
+	   xen.o entry-xen.o pci.o clock.o runtime.o cruntime.o acpi.o __ctype_b_loc.o
+
+objects += $(_objects:%=$(OUT)/%)
 
 all: $(OUT)/loader.img $(OUT)/loader.bin
 
@@ -17,6 +38,7 @@ clean:
 image-size = $(shell stat --printf %s $(OUT)/lzloader.elf)
 
 $(OUT)/acpi.o: CXXFLAGS += -I ./acpica/source/include
+$(OUT)/acpi.o: $(acpi-objects)
 
 $(OUT)/boot.bin: boot16.ld $(OUT)/boot16.o
 	$(call quiet, $(LD) -o $@ -T $^, LD $@)
