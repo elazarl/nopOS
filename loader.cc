@@ -37,6 +37,10 @@ void __assert_fail(const char * assertion, const char * file, unsigned int line,
 interrupt_descriptor_table *gidt;
     extern "C" void interrupt(void *, int);
 
+// note, we have no OS, hence, init ELF section doesn't run
+// we need to run our own compiler
+sched::arch_cpu arch_cpu;
+
 void premain()
 {
     isa_serial_console_early_init();
@@ -51,16 +55,16 @@ void premain()
     static ulong edata;
     asm ("movl $.edata, %0" : "=rm"(edata));
 
-    sched::arch_cpu arch_cpu;
+    new (&arch_cpu) sched::arch_cpu();
     arch_cpu.init_on_cpu();
     interrupt_descriptor_table tbl;
     tbl.load_on_cpu();
-    /*interrupts::register_fn(50, [](void *) {
+    interrupts::register_fn(50, [](void *) {
         printf("interrupt 50\n");
         return 0u;
-    });*/
-    //asm volatile ("int $50");
-    //asm volatile ("int $51");
+    });
+    asm volatile ("int $50");
+    asm volatile ("int $51");
 
     // copy to stack so we don't free it now
     auto omb = *osv_multiboot_info;
@@ -74,14 +78,13 @@ void premain()
 	memory::max_page_addr = reinterpret_cast<u8 *>(ent.addr);
 	memory::max_page_addr += ent.size;
     });
-    acpi::poweroff();
-    memory::alloc_page();
+    //memory::alloc_page();
     mmu::cr3 cr3{processor::read_cr3()};
     printf((char*)"cr3:  ");cr3.print(printf);printf((char*)"\n");
     mmu::pml4e *pml4 = &cr3.PML4ptr()[511];
     mmu::init(pml4);
     //u8 unused = *reinterpret_cast<u8*>(0xfffffff100);
-    //*reinterpret_cast<u8*>(0xfffffff100) = 1;
+    // *reinterpret_cast<u8*>(0xfffffff100) = 1;
     pml4->PDPTptr(memory::alloc_page());
     mmu::pdpte *pdpt = pml4->PDPTptr()+4;
     mmu::init(pdpt->to_pd());
@@ -104,6 +107,7 @@ void premain()
     *virt.ptr() = 10;
     printf((char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
 
+    printf("max_page_addr: %x\n", memory::max_page_addr-4096);
     pml4 = cr3.PML4ptr();
     for (int i{0}; i<512;i++) {
         if (pml4[i].present == 0) continue;
@@ -130,9 +134,9 @@ void premain()
             }
         }
     }
-    printf((char*)"%x\n", virt.to_u64());
-    printf((char*)"%x\n", virt._4k.directory);
     acpi::poweroff();
+    //printf((char*)"%x\n", virt.to_u64());
+    //printf((char*)"%x\n", virt._4k.directory);
 
     /*int baseio = 0xb100;
     processor::outw(baseio+4, 0x0 | 0x2000 );

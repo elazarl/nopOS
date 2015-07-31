@@ -223,7 +223,6 @@ AcpiOsReleaseObject (
 /*
  * Interrupt handlers
  */
-//extern interrupt_descriptor_table *gidt;
 
 ACPI_STATUS
 AcpiOsInstallInterruptHandler(
