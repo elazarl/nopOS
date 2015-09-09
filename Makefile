@@ -26,7 +26,7 @@ $(acpi-objects): CFLAGS += -I acpica/source/include -fno-strict-aliasing -Wno-st
 objects += $(acpi-objects)
 
 _objects += print.o console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
-	   xen.o entry-xen.o pci.o clock.o runtime.o cruntime.o acpi.o __ctype_b_loc.o
+	   xen.o entry-xen.o pci.o clock.o runtime.o cruntime.o acpi.o __ctype_b_loc.o smp.o
 
 objects += $(_objects:%=$(OUT)/%)
 
@@ -37,20 +37,24 @@ clean:
 
 image-size = $(shell stat --printf %s $(OUT)/lzloader.elf)
 
-$(OUT)/acpi.o: CXXFLAGS += -I ./acpica/source/include
+$(OUT)/acpi.o $(OUT)/smp.o: CXXFLAGS += -I ./acpica/source/include
 $(OUT)/acpi.o: $(acpi-objects)
 
-$(OUT)/boot.bin: boot16.ld $(OUT)/boot16.o
+$(OUT)/boot16.elf: boot16.ld $(OUT)/boot16.o
+	$(call quiet, $(LD) $(OUT)/boot16.o -o $@, LD $@)
+
+$(OUT)/boot16.bin: boot16.ld $(OUT)/boot16.o
 	$(call quiet, $(LD) -o $@ -T $^, LD $@)
 
 $(OUT)/loader-stripped.elf: $(OUT)/loader.elf
 	$(call very-quiet, cp $(OUT)/loader.elf $(OUT)/loader-stripped.elf)
 	$(call quiet, $(STRIP) $(OUT)/loader-stripped.elf, STRIP loader.elf)
 
-$(OUT)/loader.img: $(OUT)/boot.bin $(OUT)/lzloader.elf
-	$(call quiet, dd if=$(OUT)/boot.bin of=$@ > /dev/null 2>&1, DD $@ boot.bin)
+$(OUT)/loader.img: $(OUT)/boot16.bin $(OUT)/lzloader.elf
+	$(call quiet, dd if=$(OUT)/boot16.bin of=$@ > /dev/null 2>&1, DD $@ boot16.bin)
 	$(call quiet, cat $(OUT)/lzloader.elf /dev/zero|dd count=`python -c 'print max(192, ($(image-size)-1)/512+1)'` of=$@ conv=notrunc seek=128 > /dev/null 2>&1, \
 		DD $@ lzloader.elf)
+	$(call quiet, python setsize.py $@ $(OUT)/lzloader.elf, DD $@ boot16.bin)
 
 $(OUT)/loader.bin: $(OUT)/boot32.o loader32.ld
 	$(call quiet, $(LD) -nostartfiles -static -nodefaultlibs -o $@ \

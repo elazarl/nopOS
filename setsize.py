@@ -8,9 +8,11 @@ if __name__ == '__main__':
     elf = sys.argv[2]
     block_size = 32*1024
     elf_size_in_bytes = os.stat(elf).st_size
+    print('elf_size_in_bytes', sys.argv[2], elf_size_in_bytes)
     img_size = os.stat(img).st_size
     # round up
     elf_size_in_blocks = (elf_size_in_bytes+block_size-1)//block_size
+    elf_size_in_blocks += 10
     elf_data = bytearray(img_size)
     with io.FileIO(img, 'r') as fp:
         n = fp.readinto(elf_data)

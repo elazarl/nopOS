@@ -1,6 +1,9 @@
 #pragma once
 #include "types.h"
 
+#include <cassert>
+#include "processor.hh"
+
 extern "C" void tfp_printf(const char *fmt, ...);
 namespace mmu {
 // we assume no pcide
@@ -465,4 +468,7 @@ private:
     u64 *to_u64ptr() { return reinterpret_cast<u64 *>(this); }
 } __attribute__((packed));
 static_assert(sizeof(vaddr) == 8, "vaddr is 64 bit");
+
+void map(vaddr addr, u64 phys);
+
 }

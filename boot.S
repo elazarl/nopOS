@@ -104,8 +104,8 @@ start64:
 # Otherwise - you'll have problem with connecting to
 # QEMU as i8086, and debugging the i386:x64-32 machine
 loop:
-    #cmp $0xfeed, %eax
-    #jne loop
+    cmp $0xfeed, %eax
+    jne loop
     lea .bss, %rdi
     lea .edata, %rcx
     sub %rdi, %rcx

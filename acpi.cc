@@ -154,7 +154,7 @@ static int acpi_allocated;
 
 void *AcpiOsAllocate(ACPI_SIZE Size)
 {
-    static char memory[1024*256];
+    static char memory[1024*175];
     if (acpi_allocated + Size > sizeof(memory)) {
         printf("ENOMEM!");
         for (;;);

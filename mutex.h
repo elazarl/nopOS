@@ -12,6 +12,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
+#include "spinlock.h"
+
+typedef spinlock_t mutex_t;
+typedef mutex_t mutex;
 
 // To use the spin-lock-based mutex instead of lockfree::mutex everywhere,
 // change #define LOCKFREE_MUTEX here to #undef.
@@ -19,50 +23,24 @@
 
 #define LOCKFREE_MUTEX_ALIGN void*
 #define LOCKFREE_MUTEX_SIZE 40
-#ifdef __cplusplus
-/** C++ **/
-#include <lockfree/mutex.hh>
-typedef lockfree::mutex mutex;
-typedef lockfree::mutex mutex_t;
-static_assert(sizeof(mutex) == LOCKFREE_MUTEX_SIZE,
-        "LOCKFREE_MUTEX_SIZE should match lockfree::mutex");
-static_assert(alignof(mutex) == alignof(LOCKFREE_MUTEX_ALIGN),
-        "LOCKFREE_MUTEX_ALIGN should match alignment of lockfree::mutex");
 static inline void mutex_lock(mutex_t* m)
 {
-    m->lock();
+    spin_lock(m);
 }
 static inline bool mutex_trylock(mutex_t* m)
 {
-    return m->try_lock();
+    return spin_trylock(m);
 }
 static inline void mutex_unlock(mutex_t* m)
 {
-    m->unlock();
+    spin_unlock(m);
 }
 static inline bool mutex_owned(mutex_t* m)
 {
-    return m->owned();
+    abort();
 }
-#else
-/** C **/
-typedef struct mutex {
-    union {
-        char forsize[LOCKFREE_MUTEX_SIZE];
-        LOCKFREE_MUTEX_ALIGN foralignment;
-    };
-} mutex_t;
-void lockfree_mutex_lock(void *m);
-void lockfree_mutex_unlock(void *m);
-bool lockfree_mutex_try_lock(void *m);
-bool lockfree_mutex_owned(void *m);
-static inline void mutex_lock(mutex_t *m) { lockfree_mutex_lock(m); }
-static inline void mutex_unlock(mutex_t *m) { lockfree_mutex_unlock(m); }
-static inline bool mutex_trylock(mutex_t *m) { return lockfree_mutex_try_lock(m); }
-static inline bool mutex_owned(mutex_t *m) { return lockfree_mutex_owned(m); }
-#endif
 /** both C and C++ code currently use these, though they should be C-only  **/
-static inline void mutex_init(mutex_t* m) { memset(m, 0, sizeof(mutex_t)); }
+static inline void mutex_init(mutex_t* m) { spinlock_init(m); }
 static inline void mutex_destroy(mutex_t* m) { }
 #define MUTEX_INITIALIZER   {}
 

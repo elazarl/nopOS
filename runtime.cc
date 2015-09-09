@@ -12,7 +12,10 @@ void __cxa_finalize(void *f){}
 }
 //void* operator new (std::size_t size) throw (std::bad_alloc) { printf("new is called\n"); for (;;); __builtin_unreachable(); }
 namespace std {
-    void __throw_bad_function_call() { printf("bad function called\n"); for (;;); }
+void __throw_bad_function_call() { printf("bad function called\n"); for (;;); }
+void __throw_length_error(char const*){ printf("%s\n", __func__); for (;;); }
+void __throw_bad_alloc(){ printf("%s\n", __func__); for (;;); }
 }
+void *operator new(size_t) { printf("%s\n", __func__); __builtin_abort(); }
 extern "C" {
 }

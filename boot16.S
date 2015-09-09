@@ -87,7 +87,7 @@ read_disk:
     mov $0x42, %ah
     mov $0x80, %dl
     int $0x13
-    jc done_disk # in case of errors, we don't really know what to do.
+    jc done_disk_error # in case of errors, we don't really know what to do.
 
     cli
     lgdtw gdt
@@ -121,6 +121,7 @@ read_disk:
     addl $(0x8000 / 0x200), lba
     decw count32
     jnz read_disk
+
 done_disk:
     rdtsc
     mov %eax, mb_tsc_disk_lo
@@ -160,6 +161,11 @@ done_e820:
     mov $loader, %eax
     mov $mb_info, %ebx
     call *entry
+done_disk_error:
+    nop
+    nop
+    nop
+    jmp done_disk
 
 .org 0x1b8
 .byte 0x56, 0x53, 0x4F, 0, 0, 0
