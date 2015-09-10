@@ -30,7 +30,7 @@ _objects += print.o console.o arch-setup.o printf.o entry.o exceptions.o arch-cp
 
 objects += $(_objects:%=$(OUT)/%)
 
-all: $(OUT)/loader.img $(OUT)/loader.bin
+all: $(OUT)/loader.img $(OUT)/loader.bin $(OUT)/boot16.elf
 
 clean:
 	rm -rf $(OUT)
@@ -41,7 +41,7 @@ $(OUT)/acpi.o $(OUT)/smp.o: CXXFLAGS += -I ./acpica/source/include
 $(OUT)/acpi.o: $(acpi-objects)
 
 $(OUT)/boot16.elf: boot16.ld $(OUT)/boot16.o
-	$(call quiet, $(LD) $(OUT)/boot16.o -o $@, LD $@)
+	$(call quiet, $(LD) $(OUT)/boot16.o boot16.ld -o $@, LD $@)
 
 $(OUT)/boot16.bin: boot16.ld $(OUT)/boot16.o
 	$(call quiet, $(LD) -o $@ -T $^, LD $@)
