@@ -65,6 +65,7 @@ void premain()
     });
     asm volatile ("int $50");
     asm volatile ("int $51");
+    acpi::parse_madt();
 
     // copy to stack so we don't free it now
     auto omb = *osv_multiboot_info;

@@ -12,6 +12,7 @@ namespace acpi {
 void early_init();
 void init();
 void poweroff(void);
+void parse_madt();
 
 }
 
