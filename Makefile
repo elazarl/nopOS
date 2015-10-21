@@ -35,7 +35,9 @@ all: $(OUT)/loader.img $(OUT)/loader.bin $(OUT)/boot16.elf
 clean:
 	rm -rf $(OUT)
 
+block-size = $(shell expr 512 \* 64)
 image-size = $(shell stat --printf %s $(OUT)/lzloader.elf)
+image-block-size = $(shell expr \( $(image-size) - 1 \) / $(block-size) + 1)
 
 $(OUT)/acpi.o $(OUT)/smp.o: CXXFLAGS += -I ./acpica/source/include
 $(OUT)/acpi.o: $(acpi-objects)
@@ -52,7 +54,7 @@ $(OUT)/loader-stripped.elf: $(OUT)/loader.elf
 
 $(OUT)/loader.img: $(OUT)/boot16.bin $(OUT)/lzloader.elf
 	$(call quiet, dd if=$(OUT)/boot16.bin of=$@ > /dev/null 2>&1, DD $@ boot16.bin)
-	$(call quiet, cat $(OUT)/lzloader.elf /dev/zero|dd count=`python -c 'print max(192, ($(image-size)-1)/512+1)'` of=$@ conv=notrunc seek=128 > /dev/null 2>&1, \
+	$(call quiet, cat $(OUT)/lzloader.elf /dev/zero|dd count=$(image-block-size) ibs=$(block-size) of=$@ conv=notrunc seek=128 > /dev/null 2>&1, \
 		DD $@ lzloader.elf)
 	$(call quiet, python setsize.py $@ $(OUT)/lzloader.elf, DD $@ boot16.bin)
 

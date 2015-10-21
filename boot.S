@@ -105,7 +105,7 @@ start64:
 # QEMU as i8086, and debugging the i386:x64-32 machine
 loop:
     cmp $0xfeed, %eax
-    jne loop
+    #jne loop
     lea .bss, %rdi
     lea .edata, %rcx
     sub %rdi, %rcx

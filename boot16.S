@@ -162,7 +162,7 @@ done_e820:
     mov $mb_info, %ebx
     call *entry
 done_disk_error:
-    nop
+    jmp done_disk_error
     nop
     nop
     jmp done_disk
