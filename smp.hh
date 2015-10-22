@@ -11,5 +11,6 @@ struct cpu {
 	int id;
 	cpu(int _id) : id(_id) {}
 };
+void parse_madt();
 extern StackVector<cpu, max_ncpu> cpus;
 }

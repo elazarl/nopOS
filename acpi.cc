@@ -15,6 +15,7 @@ extern "C" {
 #include "processor.hh"
 #include "exceptions.hh"
 #include "xen.hh"
+#include "smp.hh"
 
 #include "pci.hh"
 #include "printf.h"
@@ -584,42 +585,6 @@ void poweroff(void)
     // We shouldn't get here on x86.
     printf("shouldn't get here\n");
     processor::cli_hlt();
-}
-
-void parse_madt()
-{
-    char madt_sig[] = ACPI_SIG_MADT;
-    ACPI_TABLE_HEADER* madt_header;
-    auto st = AcpiGetTable(madt_sig, 0, &madt_header);
-    assert(st == AE_OK);
-    auto madt = reinterpret_cast<ACPI_TABLE_MADT*>(madt_header);
-    void* subtable = madt + 1;
-    void* madt_end = static_cast<void*>(madt) + madt->Header.Length;
-    unsigned nr_cpus = 0;
-    while (subtable != madt_end) {
-        auto s = static_cast<ACPI_SUBTABLE_HEADER*>(subtable);
-        switch (s->Type) {
-        case ACPI_MADT_TYPE_LOCAL_APIC: {
-            auto lapic = reinterpret_cast<ACPI_MADT_LOCAL_APIC*>(s);
-            if (!(lapic->LapicFlags & ACPI_MADT_ENABLED)) {
-                break;
-            }
-            nr_cpus++;
-            /*auto c = new sched::cpu(nr_cpus++);
-            c->arch.apic_id = lapic->Id;
-            c->arch.acpi_id = lapic->ProcessorId;
-            c->arch.initstack.next = smp_stack_free;
-            smp_stack_free = &c->arch.initstack;
-            sched::cpus.push_back(c);*/
-            break;
-        }
-        default:
-            break;
-        }
-        subtable += s->Length;
-    }
-    printf("%d CPUs detected\n", nr_cpus);
-    //debug(fmt("%d CPUs detected\n") % nr_cpus);
 }
 
 }
