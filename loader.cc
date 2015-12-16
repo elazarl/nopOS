@@ -19,6 +19,7 @@
 #include "printf.h"
 #include "acpi.hh"
 #include "smp.hh"
+#include "apic.hh"
 
 extern "C" {
     void premain();
@@ -136,6 +137,10 @@ void premain()
             }
         }
     }
+
+    smp::init();
+    smp::launch();
+
     acpi::poweroff();
     //printf((char*)"%x\n", virt.to_u64());
     //printf((char*)"%x\n", virt._4k.directory);
@@ -169,6 +174,3 @@ int main(int ac, char **av)
 {
     return 0;
 }
-
-extern "C" { void smp_main(void) {} }
-

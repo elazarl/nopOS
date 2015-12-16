@@ -13,4 +13,7 @@ struct cpu {
 };
 void parse_madt();
 extern StackVector<cpu, max_ncpu> cpus;
+void init();
+void launch();
+cpu* smp_initial_find_current_cpu();
 }

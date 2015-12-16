@@ -198,6 +198,12 @@ struct pde {
         assert(type() == pd_type::PD_PT);
         return &pt;
     }
+    u8 *page()
+    {
+        if (type() == pd_type::PD_2M) return to_2m()->page();
+        if (type() == pd_type::PD_PT) return reinterpret_cast<u8 *>(to_pt()->pt());
+        __builtin_abort();
+    }
     template <typename T> void print(T p) {
         switch (type()) {
         case pd_type::PD_2M:

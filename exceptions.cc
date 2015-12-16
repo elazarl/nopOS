@@ -144,6 +144,7 @@ extern "C" void nmi(exception_frame* ef)
 extern "C"
 void general_protection(exception_frame* ef)
 {
+    printf("#GP: RIP %lx\n", ef->rip);
     abort();
 }
 

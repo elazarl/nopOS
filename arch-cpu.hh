@@ -152,12 +152,9 @@ inline void arch_cpu::set_interrupt_stack(arch_thread* t)
 inline void arch_cpu::init_on_cpu()
 {
     using namespace processor;
-    printf("init_on_cpu\n");
 
     lgdt(desc_ptr(nr_gdt*8-1, reinterpret_cast<u64>(&gdt)));
-    printf("init_on_cpu1\n");
     ltr(gdt_tss*8);
-    printf("init_on_cpu2\n");
     //idt.load_on_cpu();
     ulong cr4 = cr4_de | cr4_pse | cr4_pae | cr4_pge | cr4_osfxsr
             | cr4_osxmmexcpt;
@@ -167,9 +164,7 @@ inline void arch_cpu::init_on_cpu()
     if (features().xsave) {
         cr4 |= cr4_osxsave;
     }
-    printf("init_on_cpu4\n");
     write_cr4(cr4);
-    printf("init_on_cpu5\n");
 
     if (features().xsave) {
         auto bits = xcr0_x87 | xcr0_sse;
