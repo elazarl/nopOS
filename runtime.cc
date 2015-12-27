@@ -34,6 +34,6 @@ void __throw_bad_alloc()
 
 void *operator new(size_t)
 {
-    log::info(log::acpi, "%s\n", __func__);
+    log::info(log::exception, "%s\n", __func__);
     __builtin_abort();
 }

@@ -6,6 +6,7 @@
  */
 
 #include <cassert>
+#include <cstdarg>
 #include <alloca.h>
 #include "types.h"
 #include "console.hh"
@@ -42,6 +43,14 @@ interrupt_descriptor_table *gidt;
 // note, we have no OS, hence, init ELF section doesn't run
 // we need to run our own compiler
 sched::arch_cpu arch_cpu;
+
+static void boot_print(const char *fmt, ...)
+{
+    va_list va;
+    va_start(va,fmt);
+    log::vdebug(log::boot, fmt, va);
+    va_end(va);
+}
 
 void premain()
 {
@@ -82,7 +91,9 @@ void premain()
     });
     //memory::alloc_page();
     mmu::cr3 cr3{processor::read_cr3()};
-    //printf((char*)"cr3:  ");cr3.print(printf);printf((char*)"\n");
+    log::info(log::boot, (char*)"cr3:  ");
+    cr3.print(boot_print);
+    log::info(log::boot, (char*)"\n");
     mmu::pml4e *pml4 = &cr3.PML4ptr()[511];
     mmu::init(pml4);
     //u8 unused = *reinterpret_cast<u8*>(0xfffffff100);
@@ -109,12 +120,12 @@ void premain()
     *virt.ptr() = 10;
     log::info(log::boot, (char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
 
-    log::info(log::acpi, "max_page_addr: %x\n", memory::max_page_addr-4096);
+    log::info(log::boot, "max_page_addr: %x\n", memory::max_page_addr-4096);
     pml4 = cr3.PML4ptr();
     for (int i{0}; i<512;i++) {
         if (pml4[i].present == 0) continue;
-        /*pml4[i].print(printf);
-            printf((char*)"\n");*/
+        pml4[i].print(boot_print);
+        log::info(log::boot, (char*)"\n");
         mmu::pdpte *pdpt = pml4[i].PDPTptr();
         for (int j{0}; j<512; j++) {
             if (pdpt[j].present() == 0) continue;
@@ -124,21 +135,21 @@ void premain()
             mmu::pde *pd = pdpt[j].to_pd()->pd();
             for (int k{0}; k<512; k++) {
                 if (!pd[k].present()) continue;
-                /*pd[k].print(printf);*/
+                pd[k].print(boot_print);
                 log::info(log::boot, (char*)"\n");
                 if (pd[k].type() == mmu::pd_type::PD_2M) continue;
                 mmu::pte *pt = pd[k].to_pt()->pt();
                 for (int l{0}; l<512; l++) {
                     if (!pt[l].present) continue;
-                    /*pt[l].print(printf);*/
+                    pt[l].print(boot_print);
                     log::info(log::boot, (char*)"\n");
                 }
             }
         }
     }
 
-    /*smp::init();
-    smp::launch();*/
+    smp::init();
+    smp::launch();
 
     acpi::poweroff();
     //printf((char*)"%x\n", virt.to_u64());

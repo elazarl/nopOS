@@ -20,6 +20,10 @@ extern "C" {
 #include "pci.hh"
 #include "log.hh"
 
+namespace log {
+extern module acpi;
+}
+
 ACPI_STATUS AcpiOsInitialize()
 {
     return AE_OK;

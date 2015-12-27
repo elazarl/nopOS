@@ -24,7 +24,6 @@ void fatal(module m, const char *fmt, ...);
 void init();
 
 extern module boot;
-extern module acpi;
 extern module exception;
 
 

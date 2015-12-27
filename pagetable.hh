@@ -447,11 +447,11 @@ struct vaddr {
     vaddr(cr3 _cr3, pml4e *pml4, pdpte *pdpt, pde *pd, pte *pt, u64 offset) {
         log::info(log::boot, (char*)"pml4   %d\n", (pml4 - _cr3.PML4ptr()));
         _4k.PML4 = pml4 - _cr3.PML4ptr();
-        log::info(log::acpi, (char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
+        log::info(log::boot, (char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
         _4k.directoryPtr = pdpt - pml4->PDPTptr();
-        log::info(log::acpi, (char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
+        log::info(log::boot, (char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
         _4k.directory = pd - pdpt->to_pd()->pd();
-        log::info(log::acpi, (char*)"table  %d\n", pt - pd->to_pt()->pt());
+        log::info(log::boot, (char*)"table  %d\n", pt - pd->to_pt()->pt());
         _4k.table = pt - pd->to_pt()->pt();
         _4k.offset = offset;
         cannoncialize();
