@@ -18,13 +18,7 @@ extern "C" {
 #include "smp.hh"
 
 #include "pci.hh"
-#include "printf.h"
-
-#define acpi_tag "acpi"
-#define acpi_d(...)   printf(__VA_ARGS__)
-#define acpi_i(...)   printf(__VA_ARGS__)
-#define acpi_w(...)   printf(__VA_ARGS__)
-#define acpi_e(...)   printf(__VA_ARGS__)
+#include "log.hh"
 
 ACPI_STATUS AcpiOsInitialize()
 {
@@ -158,7 +152,7 @@ void *AcpiOsAllocate(ACPI_SIZE Size)
 {
     static char memory[1024*175];
     if (acpi_allocated + Size > sizeof(memory)) {
-        printf("ENOMEM!");
+        log::info(log::acpi, "ENOMEM!");
         for (;;);
     }
     void *chunk = &memory[acpi_allocated];
@@ -493,11 +487,7 @@ void ACPI_INTERNAL_VAR_XFACE AcpiOsPrintf(const char *Format, ...)
 
 void AcpiOsVprintf(const char *Format, va_list Args)
 {
-    static char msg[1024];
-
-    vsnprintf(msg, sizeof(msg), Format, Args);
-
-    acpi_i(msg);
+    log::vdebug(log::acpi, Format, Args);
 }
 
 namespace acpi {
@@ -512,28 +502,28 @@ void early_init()
 
     status = AcpiInitializeTables(TableArray, ACPI_MAX_INIT_TABLES, TRUE);
     if (ACPI_FAILURE(status)) {
-        acpi_e("AcpiInitializeTables failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiInitializeTables failed: %s\n", AcpiFormatException(status));
         return;
     }
 
     // Initialize ACPICA subsystem
     status = AcpiInitializeSubsystem();
     if (ACPI_FAILURE(status)) {
-        acpi_e("AcpiInitializeSubsystem failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiInitializeSubsystem failed: %s\n", AcpiFormatException(status));
         return;
     }
 
     // Copy the root table list to dynamic memory
     status = AcpiReallocateRootTable();
     if (ACPI_FAILURE(status)) {
-        acpi_e("AcpiReallocateRootTable failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiReallocateRootTable failed: %s\n", AcpiFormatException(status));
         return;
     }
 
     // Create the ACPI namespace from ACPI tables
     status = AcpiLoadTables();
     if (ACPI_FAILURE(status)) {
-        acpi_e("AcpiLoadTables failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiLoadTables failed: %s\n", AcpiFormatException(status));
         return;
     }
 }
@@ -555,14 +545,14 @@ void init()
     // Initialize the ACPI hardware
     status = AcpiEnableSubsystem(ACPI_FULL_INITIALIZATION);
     if (ACPI_FAILURE(status)) {
-        acpi_e("AcpiEnableSubsystem failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiEnableSubsystem failed: %s\n", AcpiFormatException(status));
         return;
     }
 
     // Complete the ACPI namespace object initialization
     status = AcpiInitializeObjects(ACPI_FULL_INITIALIZATION);
     if (ACPI_FAILURE(status)) {
-        acpi_e("AcpiInitializeObjects failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiInitializeObjects failed: %s\n", AcpiFormatException(status));
     }
 
     AcpiInstallFixedEventHandler(ACPI_EVENT_POWER_BUTTON, acpi_poweroff, nullptr);
@@ -573,17 +563,17 @@ void poweroff(void)
 {
     ACPI_STATUS status = AcpiEnterSleepStatePrep(ACPI_STATE_S5);
     if (ACPI_FAILURE(status)) {
-        printf("AcpiEnterSleepStatePrep failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiEnterSleepStatePrep failed: %s\n", AcpiFormatException(status));
         processor::cli_hlt();
     }
     status = AcpiEnterSleepState(ACPI_STATE_S5);
     if (ACPI_FAILURE(status)) {
-        printf("AcpiEnterSleepState failed: %s\n", AcpiFormatException(status));
+        log::info(log::acpi, "AcpiEnterSleepState failed: %s\n", AcpiFormatException(status));
         processor::cli_hlt();
     }
 
     // We shouldn't get here on x86.
-    printf("shouldn't get here\n");
+    log::info(log::acpi, "shouldn't get here\n");
     processor::cli_hlt();
 }
 

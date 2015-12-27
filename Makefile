@@ -27,7 +27,7 @@ objects += $(acpi-objects)
 
 _objects += print.o console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
 	   xen.o entry-xen.o pci.o clock.o runtime.o cruntime.o acpi.o __ctype_b_loc.o smp.o apic.o \
-	   pagetable.o
+	   pagetable.o log.o
 
 objects += $(_objects:%=$(OUT)/%)
 

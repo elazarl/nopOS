@@ -1,10 +1,10 @@
 #pragma once
 #include "types.h"
+#include "log.hh"
 
 #include <cassert>
 #include "processor.hh"
 
-extern "C" void tfp_printf(const char *fmt, ...);
 namespace mmu {
 // we assume no pcide
 struct u64_entry {
@@ -445,13 +445,13 @@ static_assert(sizeof(vaddr_1g) == 6, "vaddr is 64 bit");
 
 struct vaddr {
     vaddr(cr3 _cr3, pml4e *pml4, pdpte *pdpt, pde *pd, pte *pt, u64 offset) {
-        tfp_printf((char*)"pml4   %d\n", (pml4 - _cr3.PML4ptr()));
+        log::info(log::boot, (char*)"pml4   %d\n", (pml4 - _cr3.PML4ptr()));
         _4k.PML4 = pml4 - _cr3.PML4ptr();
-        tfp_printf((char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
+        log::info(log::acpi, (char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
         _4k.directoryPtr = pdpt - pml4->PDPTptr();
-        tfp_printf((char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
+        log::info(log::acpi, (char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
         _4k.directory = pd - pdpt->to_pd()->pd();
-        tfp_printf((char*)"table  %d\n", pt - pd->to_pt()->pt());
+        log::info(log::acpi, (char*)"table  %d\n", pt - pd->to_pt()->pt());
         _4k.table = pt - pd->to_pt()->pt();
         _4k.offset = offset;
         cannoncialize();

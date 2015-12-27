@@ -13,8 +13,6 @@
 #include "cpuid.hh"
 #include <xmmintrin.h>
 
-#include "printf.h"
-
 struct init_stack {
     char stack[4096] __attribute__((aligned(16)));
     init_stack* next;

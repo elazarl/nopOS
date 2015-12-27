@@ -1,7 +1,7 @@
 #include "smp.hh"
 #include <cassert>
 #include "acpi.hh"
-#include "printf.h"
+#include "log.hh"
 #include "processor.hh"
 #include "msr.hh"
 #include "apic.hh"
@@ -50,7 +50,7 @@ void parse_madt()
         }
         subtable += s->Length;
     }
-    printf("%d CPUs detected\n", nr_cpus);
+    log::info(log::boot, "%d CPUs detected\n", nr_cpus);
 }
 
 void init()
@@ -116,7 +116,7 @@ void smp_main(void)
 { 
     processor::apic->init_on_ap();
     auto cpu = smp::smp_initial_find_current_cpu();
-    printf("Started %d\n", cpu->id);
+    log::info(log::boot, "Started %d\n", cpu->id);
     __sync_fetch_and_add(&smp::smp_processors, 1);
     for(;;) processor::sti_hlt();
 }

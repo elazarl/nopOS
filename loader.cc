@@ -16,10 +16,10 @@
 #include "processor.hh"
 #include "pagetable.hh"
 #include "exceptions.hh"
-#include "printf.h"
 #include "acpi.hh"
 #include "smp.hh"
 #include "apic.hh"
+#include "log.hh"
 
 extern "C" {
     void premain();
@@ -32,7 +32,7 @@ extern "C" {
 
 void __assert_fail(const char * assertion, const char * file, unsigned int line, const char * function)
 {
-    printf("%s:%u:%d: %s\n", file, line, function, assertion);
+    log::info(log::boot, "%s:%u:%d: %s\n", file, line, function, assertion);
     __builtin_trap();
 }
 
@@ -45,12 +45,11 @@ sched::arch_cpu arch_cpu;
 
 void premain()
 {
-    isa_serial_console_early_init();
-    debug_early("miniOSV\n");
-    debug_early("woo hoo!\n");
-    init_printf(nullptr, [](void *, char c) {
-        isa_serial_console_putchar(c);
-    });
+    log::init();
+    log::set(log::boot, log::level::DEBUG);
+    log::debug(log::boot, "miniOSV\n");
+    log::debug(log::boot, "woo hoo!\n");
+    isa_serial_console_readch();
     acpi::early_init();
     acpi::init();
 
@@ -62,7 +61,7 @@ void premain()
     interrupt_descriptor_table tbl;
     tbl.load_on_cpu();
     interrupts::register_fn(50, [](void *) {
-        printf("interrupt 50\n");
+        log::debug(log::boot, "interrupt 50\n");
         return 0u;
     });
     asm volatile ("int $50");
@@ -77,13 +76,13 @@ void premain()
     //char *mbe820 = reinterpret_cast<char*>(mb.mmap_addr);
     memcpy(e820_buffer, reinterpret_cast<void*>(mb.mmap_addr), e820_size);
     for_each_e820_entry(e820_buffer, e820_size, [] (e820ent ent) {
-        printf((char *)"%x %x %d\n", ent.type, ent.addr, ent.size);
+            log::debug(log::boot, "%x %x %d\n", ent.type, ent.addr, ent.size);
 	memory::max_page_addr = reinterpret_cast<u8 *>(ent.addr);
 	memory::max_page_addr += ent.size;
     });
     //memory::alloc_page();
     mmu::cr3 cr3{processor::read_cr3()};
-    printf((char*)"cr3:  ");cr3.print(printf);printf((char*)"\n");
+    //printf((char*)"cr3:  ");cr3.print(printf);printf((char*)"\n");
     mmu::pml4e *pml4 = &cr3.PML4ptr()[511];
     mmu::init(pml4);
     //u8 unused = *reinterpret_cast<u8*>(0xfffffff100);
@@ -104,42 +103,42 @@ void premain()
     u8 *phys = reinterpret_cast<u8 *>(0x7ffa000);
     *phys = 0xFA;
     mmu::vaddr virt{cr3, pml4, pdpt, pd, pt, 0};
-    printf((char*)"%x\n", *phys);
-    printf((char*)"PML4() :%x\n", virt.PML4());
-    printf("got %x\n", *virt.ptr());
+    log::info(log::boot, (char*)"%x\n", *phys);
+    log::info(log::boot, (char*)"PML4() :%x\n", virt.PML4());
+    log::info(log::boot, "got %x\n", *virt.ptr());
     *virt.ptr() = 10;
-    printf((char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
+    log::info(log::boot, (char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
 
-    printf("max_page_addr: %x\n", memory::max_page_addr-4096);
+    log::info(log::acpi, "max_page_addr: %x\n", memory::max_page_addr-4096);
     pml4 = cr3.PML4ptr();
     for (int i{0}; i<512;i++) {
         if (pml4[i].present == 0) continue;
-        pml4[i].print(printf);
-            printf((char*)"\n");
+        /*pml4[i].print(printf);
+            printf((char*)"\n");*/
         mmu::pdpte *pdpt = pml4[i].PDPTptr();
         for (int j{0}; j<512; j++) {
             if (pdpt[j].present() == 0) continue;
-            pdpt[j].print(printf);
-            printf((char*)"\n");
+            /*pdpt[j].print(printf);
+            printf((char*)"\n");*/
             if (pdpt[j].type() == mmu::pdpt_type::PDPT_1G) continue;
             mmu::pde *pd = pdpt[j].to_pd()->pd();
             for (int k{0}; k<512; k++) {
                 if (!pd[k].present()) continue;
-                pd[k].print(printf);
-                printf((char*)"\n");
+                /*pd[k].print(printf);*/
+                log::info(log::boot, (char*)"\n");
                 if (pd[k].type() == mmu::pd_type::PD_2M) continue;
                 mmu::pte *pt = pd[k].to_pt()->pt();
                 for (int l{0}; l<512; l++) {
                     if (!pt[l].present) continue;
-                    pt[l].print(printf);
-                    printf((char*)"\n");
+                    /*pt[l].print(printf);*/
+                    log::info(log::boot, (char*)"\n");
                 }
             }
         }
     }
 
-    smp::init();
-    smp::launch();
+    /*smp::init();
+    smp::launch();*/
 
     acpi::poweroff();
     //printf((char*)"%x\n", virt.to_u64());
