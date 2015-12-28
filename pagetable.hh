@@ -445,13 +445,13 @@ static_assert(sizeof(vaddr_1g) == 6, "vaddr is 64 bit");
 
 struct vaddr {
     vaddr(cr3 _cr3, pml4e *pml4, pdpte *pdpt, pde *pd, pte *pt, u64 offset) {
-        log::info(log::boot, (char*)"pml4   %d\n", (pml4 - _cr3.PML4ptr()));
+        logger::info(logger::boot, (char*)"pml4   %d\n", (pml4 - _cr3.PML4ptr()));
         _4k.PML4 = pml4 - _cr3.PML4ptr();
-        log::info(log::boot, (char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
+        logger::info(logger::boot, (char*)"dirPtr %d\n", (pdpt - pml4->PDPTptr()));
         _4k.directoryPtr = pdpt - pml4->PDPTptr();
-        log::info(log::boot, (char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
+        logger::info(logger::boot, (char*)"dir    %d\n", (pd - pdpt->to_pd()->pd()));
         _4k.directory = pd - pdpt->to_pd()->pd();
-        log::info(log::boot, (char*)"table  %d\n", pt - pd->to_pt()->pt());
+        logger::info(logger::boot, (char*)"table  %d\n", pt - pd->to_pt()->pt());
         _4k.table = pt - pd->to_pt()->pt();
         _4k.offset = offset;
         cannoncialize();
@@ -476,5 +476,6 @@ private:
 static_assert(sizeof(vaddr) == 8, "vaddr is 64 bit");
 
 void map(vaddr addr, u64 phys);
+bool is_mappped(vaddr addr);
 
 }

@@ -144,7 +144,7 @@ extern "C" void nmi(exception_frame* ef)
 extern "C"
 void general_protection(exception_frame* ef)
 {
-    log::info(log::exception, "#GP: RIP %lx\n", ef->rip);
+    logger::info(logger::exception, "#GP: RIP %lx\n", ef->rip);
     abort();
 }
 
@@ -153,7 +153,7 @@ extern "C" void abort() { __builtin_abort(); }
 #define DUMMY_HANDLER(x) \
      extern "C" void x(exception_frame* ef); void x(exception_frame *ef) { \
          page_fault_error_code e = ef->get_page_fault_error(); \
-         log::info(log::exception, "%s RIP %x P%d WR%d US%d RSVD%d ID%d PK%d\n", #x, ef->rip, e.p, e.wr, e.us, e.rsvd, e.id, e.pk);\
+         logger::info(logger::exception, "%s RIP %x P%d WR%d US%d RSVD%d ID%d PK%d\n", #x, ef->rip, e.p, e.wr, e.us, e.rsvd, e.id, e.pk);\
          for(;;); abort(); }
 
 DUMMY_HANDLER(debug_exception)

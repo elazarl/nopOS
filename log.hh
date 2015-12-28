@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdarg>
 
-namespace log {
+namespace logger {
 enum class level {
     DEBUG,
     INFO

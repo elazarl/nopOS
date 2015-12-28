@@ -18,7 +18,27 @@ void break_2m(pde *_pde)
     }
 }
 
-void map(vaddr addr, u64 phys) {
+bool is_mappped(vaddr addr)
+{
+    cr3 _cr3{processor::read_cr3()};
+    pml4e *_pml4 = &_cr3.PML4ptr()[addr.PML4()];
+    if (!_pml4->present)
+        return false;
+    pdpte_pd *_pdpte = (&_pml4->PDPTptr()[addr.directoryPtr()])->to_pd();
+    if (!_pdpte->present)
+        return false;
+    if (_pdpte->pd()->type() == pd_type::PD_2M) {
+        return true;
+    }
+    pde_pt *_pde = (&_pdpte->pd()[addr._4k.directory])->to_pt();
+    if (!_pde->present)
+        return false;
+    pte *_pte = &(_pde->pt()[addr._4k.table]);
+    return _pte->present;
+}
+
+void map(vaddr addr, u64 phys)
+{
     cr3 _cr3{processor::read_cr3()};
     pml4e *_pml4 = &_cr3.PML4ptr()[addr.PML4()];
     _pml4->present = 1;

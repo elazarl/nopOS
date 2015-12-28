@@ -3,7 +3,7 @@
 #include "stack_container.hh"
 #include "printf.h"
 
-namespace log {
+namespace logger {
 
 struct module_impl {
     const char *name;

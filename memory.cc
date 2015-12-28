@@ -7,7 +7,7 @@ namespace memory {
 u8 *max_page_addr;
 
 u8 *alloc_page() {
-    log::info(log::boot, "had %x now %x\n", max_page_addr, max_page_addr-4096);
+    logger::info(logger::boot, "had %x now %x\n", max_page_addr, max_page_addr-4096);
     max_page_addr -= 4096;
     memset(max_page_addr, 0, 4096);
     return max_page_addr;
