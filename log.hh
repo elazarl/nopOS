@@ -26,5 +26,4 @@ void init();
 extern module boot;
 extern module exception;
 
-
 }

@@ -7,11 +7,6 @@
 
 #include "spinlock.h"
 
-static inline void barrier()
-{
-    asm volatile("" : : : "memory");
-}
-
 void spin_lock(spinlock_t *sl)
 {
     while (__sync_lock_test_and_set(&sl->_lock, 1)) {

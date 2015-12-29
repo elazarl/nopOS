@@ -10,6 +10,11 @@
 
 #include <sys/cdefs.h>
 
+static inline void barrier()
+{
+    asm volatile("" : : : "memory");
+}
+
 __BEGIN_DECLS
 
 // Spin lock. Use mutex instead, except where impossible:

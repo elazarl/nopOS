@@ -75,8 +75,7 @@ void premain()
 
     logger::init();
     logger::set(logger::boot, logger::level::DEBUG);
-    logger::debug(logger::boot, "miniOSV\n");
-    logger::debug(logger::boot, "woo hoo!\n");
+    logger::info(logger::boot, "miniOSV\n");
     acpi::early_init();
     acpi::init();
 
@@ -86,7 +85,6 @@ void premain()
     new (&arch_cpu) sched::arch_cpu();
     arch_cpu.init_on_cpu();
 
-    smp::parse_madt();
     smp::init();
     smp::launch();
 
@@ -104,32 +102,6 @@ void premain()
 
 
     acpi::poweroff();
-    //printf((char*)"%x\n", virt.to_u64());
-    //printf((char*)"%x\n", virt._4k.directory);
-
-    /*int baseio = 0xb100;
-    processor::outw(baseio+4, 0x0 | 0x2000 );
-    processor::cli_hlt();*/
-    for (;;) {
-        u8 b = isa_serial_console_readch();
-        isa_serial_console_putchar(b);
-        if (b == '\r') isa_serial_console_putchar('\n');
-    }
-    //arch_init_early_console();
-#define OSV_VERSION "0"
-    /* besides reporting the OSV version, this string has the function
-       to check if the early console really works early enough,
-       without depending on prior initialization. */
-    //debug_early("OSv " OSV_VERSION "\n");
-
-
-    /*auto inittab = elf::get_init(elf_header);
-    setup_tls(inittab);
-    boot_time.event("TLS initialization");
-    for (auto init = inittab.start; init < inittab.start + inittab.count; ++init) {
-        (*init)();
-    }
-    boot_time.event(".init functions");*/
 }
 
 void test_interrupts()

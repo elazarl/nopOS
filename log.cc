@@ -3,6 +3,10 @@
 #include "stack_container.hh"
 #include "printf.h"
 
+namespace memory {
+logger::module memory;
+}
+
 namespace logger {
 
 struct module_impl {
@@ -32,9 +36,10 @@ void init()
 {
     isa_serial_console_early_init();
     new (&modules) StackVector<module_impl, max_modules>();
-    boot = add_module("boot", level::INFO);
-    acpi = add_module("acpi", level::INFO);
-    acpi = add_module("exception", level::INFO);
+    boot              = add_module("boot", level::INFO);
+    acpi              = add_module("acpi", level::INFO);
+    exception         = add_module("exception", level::INFO);
+    memory::memory    = add_module("memory", level::INFO);
 }
 
 module add_module(const char *name, level lvl)

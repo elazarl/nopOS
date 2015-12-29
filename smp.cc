@@ -5,9 +5,12 @@
 #include "processor.hh"
 #include "msr.hh"
 #include "apic.hh"
+#include "spinlock.h"
 extern "C" {
     #include "acpi.h"
 }
+
+logger::module smp_boot;
 
 extern char smpboot[], smpboot_end[];
 
@@ -40,8 +43,6 @@ void parse_madt()
             cpu c{nr_cpus++};
             c.apic_id = lapic->Id;
             c.acpi_id = lapic->ProcessorId;
-            //c->arch.initstack.next = smp_stack_free;
-            //smp_stack_free = &c->arch.initstack;
             cpus->push_back(c);
             break;
         }
@@ -50,12 +51,13 @@ void parse_madt()
         }
         subtable += s->Length;
     }
-    logger::info(logger::boot, "%d CPUs detected\n", nr_cpus);
+    logger::info(smp_boot, "%d CPUs detected\n", nr_cpus);
 }
 
 void init()
 {
     using namespace processor;
+    smp_boot = logger::add_module("smp_boot", logger::level::INFO);
     parse_madt();
     smpboot_cr0 = read_cr0();
     smpboot_cr4 = read_cr4();
@@ -80,32 +82,20 @@ volatile unsigned smp_processors = 1;
 
 void launch()
 {
-    //ioapic::init(); - we assume 1:1 phys:linear mapping
-    //processor::kvm_pv_eoi_init();
     auto boot_cpu = smp_initial_find_current_cpu();
     for (unsigned i=0; i<cpus->size(); i++) {
         auto c = &cpus[i];
-        //auto name = osv::sprintf("balancer%d", c->id);
         if (c == boot_cpu) {
-            /*sched::thread::current()->_detached_state->_cpu = c;
-            // c->init_on_cpu() already done in main().
-            (new sched::thread([c] { c->load_balance(); },
-                    sched::thread::attr().pin(c).name(name)))->start();
-            c->init_idle_thread();
-            c->idle_thread->start();*/
             continue;
         }
-        /*sched::thread::attr attr;
-        attr.stack(81920).pin(c).name(name);
-        c->init_idle_thread();
-        c->bringup_thread = new sched::thread([=] { ap_bringup(c); }, attr, true);*/
+        logger::debug(smp_boot, "IPI to %d apic_id %d\n", i, c->apic_id);
         processor::apic->init_ipi(c->apic_id, 0x4500); // INIT
         processor::apic->init_ipi(c->apic_id, 0x4600); // SIPI
         processor::apic->init_ipi(c->apic_id, 0x4600); // SIPI
     }
 
     while (smp_processors != cpus->size()) {
-        //barrier();
+        barrier();
     }
 }
 
@@ -116,7 +106,7 @@ void smp_main(void)
 { 
     processor::apic->init_on_ap();
     auto cpu = smp::smp_initial_find_current_cpu();
-    logger::info(logger::boot, "Started %d\n", cpu->id);
+    logger::debug(smp_boot, "Started %d\n", cpu->id);
     __sync_fetch_and_add(&smp::smp_processors, 1);
     for(;;) processor::sti_hlt();
 }
