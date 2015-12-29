@@ -3,12 +3,12 @@
 #include "log.hh"
 
 #include <cassert>
-#include "processor.hh"
 
 namespace mmu {
 // we assume no pcide
 struct u64_entry {
-    u64_entry(const u64 &u) { *reinterpret_cast<u64 *>(this) = u; }
+    explicit u64_entry(const u64 &u) { *reinterpret_cast<u64 *>(this) = u; }
+    u64 as_u64() const { return *reinterpret_cast<const u64 *>(this); }
 };
 
 template<typename T>

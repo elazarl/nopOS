@@ -1,5 +1,6 @@
 #include "pagetable.hh"
 #include "memory.hh"
+#include "processor.hh"
 
 namespace mmu {
 const int page_size = 4096;

@@ -10,6 +10,7 @@
 
 #include "types.h"
 #include "cpuid.hh"
+#include "pagetable.hh"
 
 namespace processor {
 
@@ -88,10 +89,10 @@ inline void write_cr2(ulong r) {
     asm volatile ("mov %0, %%cr2" : : "r"(r));
 }
 
-inline ulong read_cr3() {
+inline mmu::cr3 read_cr3() {
     ulong r;
     asm volatile ("mov %%cr3, %0" : "=r"(r));
-    return r;
+    return mmu::cr3{r};
 }
 
 inline void write_cr3(ulong r) {

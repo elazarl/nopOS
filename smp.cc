@@ -60,7 +60,7 @@ void init()
     smpboot_cr0 = read_cr0();
     smpboot_cr4 = read_cr4();
     smpboot_efer = rdmsr(msr::IA32_EFER);
-    smpboot_cr3 = read_cr3();
+    smpboot_cr3 = read_cr3().as_u64();
     memcpy(reinterpret_cast<void *>(0), smpboot, smpboot_end - smpboot);
     processor::apic = processor::create_apic_driver();
 }

@@ -52,6 +52,12 @@ static void boot_print(const char *fmt, ...)
     va_end(va);
 }
 
+void test_interrupts();
+void manual_set_pagetable();
+void print_pagetable();
+
+int main(int, char**);
+
 void premain()
 {
     // copy to stack so we don't free it now
@@ -73,13 +79,61 @@ void premain()
     logger::debug(logger::boot, "woo hoo!\n");
     acpi::early_init();
     acpi::init();
-    isa_serial_console_readch();
 
     static ulong edata;
     asm ("movl $.edata, %0" : "=rm"(edata));
 
     new (&arch_cpu) sched::arch_cpu();
     arch_cpu.init_on_cpu();
+
+    smp::parse_madt();
+    smp::init();
+    smp::launch();
+
+    logger::info(logger::boot, "t - test\nEnter - main\n");
+    switch (isa_serial_console_readch()) {
+    case 't':
+        test_interrupts();
+        manual_set_pagetable();
+        print_pagetable();
+        break;
+    default:
+        main(0, NULL);
+        break;
+    }
+
+
+    acpi::poweroff();
+    //printf((char*)"%x\n", virt.to_u64());
+    //printf((char*)"%x\n", virt._4k.directory);
+
+    /*int baseio = 0xb100;
+    processor::outw(baseio+4, 0x0 | 0x2000 );
+    processor::cli_hlt();*/
+    for (;;) {
+        u8 b = isa_serial_console_readch();
+        isa_serial_console_putchar(b);
+        if (b == '\r') isa_serial_console_putchar('\n');
+    }
+    //arch_init_early_console();
+#define OSV_VERSION "0"
+    /* besides reporting the OSV version, this string has the function
+       to check if the early console really works early enough,
+       without depending on prior initialization. */
+    //debug_early("OSv " OSV_VERSION "\n");
+
+
+    /*auto inittab = elf::get_init(elf_header);
+    setup_tls(inittab);
+    boot_time.event("TLS initialization");
+    for (auto init = inittab.start; init < inittab.start + inittab.count; ++init) {
+        (*init)();
+    }
+    boot_time.event(".init functions");*/
+}
+
+void test_interrupts()
+{
     interrupt_descriptor_table tbl;
     tbl.load_on_cpu();
     interrupts::register_fn(50, [](void *) {
@@ -88,8 +142,10 @@ void premain()
     });
     asm volatile ("int $50");
     asm volatile ("int $51");
-    smp::parse_madt();
+}
 
+void manual_set_pagetable()
+{
     //memory::alloc_page();
     mmu::cr3 cr3{processor::read_cr3()};
     logger::info(logger::boot, (char*)"cr3:  ");
@@ -120,9 +176,12 @@ void premain()
     logger::info(logger::boot, "got %x\n", *virt.ptr());
     *virt.ptr() = 10;
     logger::info(logger::boot, (char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
+}
 
+void print_pagetable()
+{
     logger::info(logger::boot, "max_page_addr: %x\n", memory::max_page_addr-4096);
-    pml4 = cr3.PML4ptr();
+    auto pml4 = processor::read_cr3().PML4ptr();
     for (int i{0}; i<512;i++) {
         if (pml4[i].present == 0) continue;
         pml4[i].print(boot_print);
@@ -148,37 +207,6 @@ void premain()
             }
         }
     }
-
-    smp::init();
-    smp::launch();
-
-    acpi::poweroff();
-    //printf((char*)"%x\n", virt.to_u64());
-    //printf((char*)"%x\n", virt._4k.directory);
-
-    /*int baseio = 0xb100;
-    processor::outw(baseio+4, 0x0 | 0x2000 );
-    processor::cli_hlt();*/
-    for (;;) {
-        u8 b = isa_serial_console_readch();
-        isa_serial_console_putchar(b);
-        if (b == '\r') isa_serial_console_putchar('\n');
-    }
-    //arch_init_early_console();
-#define OSV_VERSION "0"
-    /* besides reporting the OSV version, this string has the function
-       to check if the early console really works early enough,
-       without depending on prior initialization. */
-    //debug_early("OSv " OSV_VERSION "\n");
-
-
-    /*auto inittab = elf::get_init(elf_header);
-    setup_tls(inittab);
-    boot_time.event("TLS initialization");
-    for (auto init = inittab.start; init < inittab.start + inittab.count; ++init) {
-        (*init)();
-    }
-    boot_time.event(".init functions");*/
 }
 
 int main(int ac, char **av)
