@@ -26,11 +26,6 @@ extern "C" {
     void premain();
 }
 
-/*void arch_init_early_console()
-{
-    console::isa_serial_console::early_init();
-}*/
-
 void __assert_fail(const char * assertion, const char * file, unsigned int line, const char * function)
 {
     logger::info(logger::boot, "%s:%u:%d: %s\n", file, line, function, assertion);
@@ -92,18 +87,7 @@ void premain()
     smp::init();
     smp::launch();
 
-    logger::info(logger::boot, "t - test\nEnter - main\n");
-    switch (isa_serial_console_readch()) {
-    case 't':
-        test_interrupts();
-        manual_set_pagetable();
-        print_pagetable();
-        break;
-    default:
-        main(0, NULL);
-        break;
-    }
-
+    main(0, NULL);
 
     acpi::poweroff();
 }
@@ -183,42 +167,3 @@ void print_pagetable()
     }
 }
 
-struct printer {
-    void operator()(const char *fmt, ...)
-    {
-        va_list va;
-        va_start(va,fmt);
-        logger::vinfo(logger::boot, fmt, va);
-        va_end(va);
-    }
-    ~printer() { logger::info(logger::boot, "\n"); }
-};
-
-void volatile_write(void *ptr)
-{
-    volatile u8 *p = reinterpret_cast<volatile u8 *>(ptr);
-    *p = *p;
-}
-
-#include "spinlock.h"
-
-int main(int ac, char **av)
-{
-    mmu::vaddr addr{0xffff1};
-    *addr.ptr() = 1;
-    auto pml4 = processor::read_cr3().PML4ptr();
-    pml4->print(printer{});
-    auto pdpt = pml4[addr.PML4()].PDPTptr();
-    pdpt->print(printer{});
-    auto pd = pdpt[addr.directoryPtr()].to_pd()->pd();
-    pd->print(printer{});
-    void *p = pd;
-
-    barrier();
-    printer{}("Press any key to start test");
-    isa_serial_console_readch();
-    volatile_write(p);
-    printer{}("work press any key to exit");
-    isa_serial_console_readch();
-    return 0;
-}

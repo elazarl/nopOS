@@ -94,20 +94,23 @@ void launch()
         processor::apic->init_ipi(c->apic_id, 0x4600); // SIPI
     }
 
-    while (smp_processors != cpus->size()) {
-        barrier();
-    }
+    while (smp_processors != cpus->size()) { barrier(); }
 }
 
 }
 
 extern "C" {
+extern int main(int, char**);
+extern void cpu_main(smp::cpu *cpu);
 void smp_main(void)
 { 
     processor::apic->init_on_ap();
     auto cpu = smp::smp_initial_find_current_cpu();
     logger::debug(smp_boot, "Started %d\n", cpu->id);
     __sync_fetch_and_add(&smp::smp_processors, 1);
+    while (smp::smp_processors != smp::cpus->size()) { barrier(); }
+    cpu_main(cpu);
+    // wait for shutdown
     for(;;) processor::sti_hlt();
 }
 }
