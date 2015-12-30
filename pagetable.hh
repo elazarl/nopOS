@@ -465,8 +465,12 @@ struct vaddr {
         vaddr_1g _1g;
     };
     u16 extension;
-    u8 *ptr() { return reinterpret_cast<u8 *>(*reinterpret_cast<u64 *>(this)); }
-    u64 to_u64() { return *reinterpret_cast<u64 *>(this); }
+    u8 *ptr() { return reinterpret_cast<u8 *>(to_u64()); }
+    u64 to_u64()
+    {
+        u64 p = *reinterpret_cast<u64 *>(this); 
+        return (p&(1ul<<47)) ? 0xFFFF800000000000ul|p : p;
+    }
     u64 directoryPtr() { return _4k.directoryPtr; }
     u64 PML4() { return _4k.PML4; }
     void PML4(int index) { assert(index < 512 && index >= 0); _4k.PML4 = index; cannoncialize(); }

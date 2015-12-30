@@ -143,24 +143,37 @@ void print_pagetable()
     for (int i{0}; i<512;i++) {
         if (pml4[i].present == 0) continue;
         pml4[i].print(boot_print);
-        logger::info(logger::boot, (char*)"\n");
+        logger::info(logger::boot, " %d\n", i);
         mmu::pdpte *pdpt = pml4[i].PDPTptr();
         for (int j{0}; j<512; j++) {
             if (pdpt[j].present() == 0) continue;
-            /*pdpt[j].print(printf);
-            printf((char*)"\n");*/
+            pdpt[j].print(boot_print);
+            logger::info(logger::boot, " %d\n", j);
             if (pdpt[j].type() == mmu::pdpt_type::PDPT_1G) continue;
             mmu::pde *pd = pdpt[j].to_pd()->pd();
             for (int k{0}; k<512; k++) {
                 if (!pd[k].present()) continue;
                 pd[k].print(boot_print);
-                logger::info(logger::boot, (char*)"\n");
-                if (pd[k].type() == mmu::pd_type::PD_2M) continue;
+                logger::info(logger::boot, " %d\n", k);
+                if (pd[k].type() == mmu::pd_type::PD_2M) {
+                    mmu::vaddr addr{0ul};
+                    addr._2m.PML4 = i;
+                    addr._2m.directoryPtr = j;
+                    addr._2m.directory = k;
+                    logger::info(logger::boot, "addr %lx\n", addr.to_u64());
+                    continue;
+                }
                 mmu::pte *pt = pd[k].to_pt()->pt();
                 for (int l{0}; l<512; l++) {
                     if (!pt[l].present) continue;
                     pt[l].print(boot_print);
-                    logger::info(logger::boot, (char*)"\n");
+
+                    mmu::vaddr addr{0ul};
+                    addr._4k.PML4 = i;
+                    addr._4k.directoryPtr = j;
+                    addr._4k.directory    = k;
+                    addr._4k.table        = l;
+                    logger::info(logger::boot, " %d\naddr %lx (%d, %d, %d, %d)\n", l, addr.to_u64(), i, j, k, l);
                 }
             }
         }
