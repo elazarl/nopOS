@@ -7,7 +7,7 @@
 
 #include "processor.hh"
 #include "exceptions.hh"
-#include "log.hh"
+#include "logger.hh"
 
 extern "C" {
     void ex_de();

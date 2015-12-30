@@ -1,7 +1,7 @@
 #include <string.h>
 #include <cstddef>
 #include <new>
-#include "log.hh"
+#include "logger.hh"
 extern "C" void __cxa_pure_virtual()
 {
     logger::info(logger::exception, "bad virtual function\n");

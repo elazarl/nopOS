@@ -20,7 +20,7 @@
 #include "acpi.hh"
 #include "smp.hh"
 #include "apic.hh"
-#include "log.hh"
+#include "logger.hh"
 
 extern "C" {
     void premain();

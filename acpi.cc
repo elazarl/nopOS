@@ -19,7 +19,7 @@ extern "C" {
 #include "smp.hh"
 
 #include "pci.hh"
-#include "log.hh"
+#include "logger.hh"
 
 namespace logger {
 extern module acpi;

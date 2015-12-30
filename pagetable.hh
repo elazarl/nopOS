@@ -1,6 +1,6 @@
 #pragma once
 #include "types.h"
-#include "log.hh"
+#include "logger.hh"
 
 #include <cassert>
 

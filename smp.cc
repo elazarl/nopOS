@@ -1,7 +1,7 @@
 #include "smp.hh"
 #include <cassert>
 #include "acpi.hh"
-#include "log.hh"
+#include "logger.hh"
 #include "processor.hh"
 #include "msr.hh"
 #include "apic.hh"

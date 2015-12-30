@@ -1,7 +1,7 @@
 #include <cstring>
 #include "memory.hh"
 #include <cstddef>
-#include "log.hh"
+#include "logger.hh"
 extern "C" void *_memset(void *p, int val, size_t sz);
 namespace memory {
 u8 *max_page_addr;
