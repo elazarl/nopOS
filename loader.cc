@@ -48,7 +48,7 @@ static void boot_print(const char *fmt, ...)
 {
     va_list va;
     va_start(va,fmt);
-    logger::vdebug(logger::boot, fmt, va);
+    logger::vinfo(logger::boot, fmt, va);
     va_end(va);
 }
 
@@ -76,6 +76,10 @@ void premain()
     logger::init();
     logger::set(logger::boot, logger::level::DEBUG);
     logger::info(logger::boot, "miniOSV\n");
+
+    interrupt_descriptor_table tbl;
+    tbl.load_on_cpu();
+
     acpi::early_init();
     acpi::init();
 
@@ -106,8 +110,6 @@ void premain()
 
 void test_interrupts()
 {
-    interrupt_descriptor_table tbl;
-    tbl.load_on_cpu();
     interrupts::register_fn(50, [](void *) {
         logger::debug(logger::boot, "interrupt 50\n");
         return 0u;
@@ -181,7 +183,42 @@ void print_pagetable()
     }
 }
 
+struct printer {
+    void operator()(const char *fmt, ...)
+    {
+        va_list va;
+        va_start(va,fmt);
+        logger::vinfo(logger::boot, fmt, va);
+        va_end(va);
+    }
+    ~printer() { logger::info(logger::boot, "\n"); }
+};
+
+void volatile_write(void *ptr)
+{
+    volatile u8 *p = reinterpret_cast<volatile u8 *>(ptr);
+    *p = *p;
+}
+
+#include "spinlock.h"
+
 int main(int ac, char **av)
 {
+    mmu::vaddr addr{0xffff1};
+    *addr.ptr() = 1;
+    auto pml4 = processor::read_cr3().PML4ptr();
+    pml4->print(printer{});
+    auto pdpt = pml4[addr.PML4()].PDPTptr();
+    pdpt->print(printer{});
+    auto pd = pdpt[addr.directoryPtr()].to_pd()->pd();
+    pd->print(printer{});
+    void *p = pd;
+
+    barrier();
+    printer{}("Press any key to start test");
+    isa_serial_console_readch();
+    volatile_write(p);
+    printer{}("work press any key to exit");
+    isa_serial_console_readch();
     return 0;
 }
