@@ -48,7 +48,6 @@ static void boot_print(const char *fmt, ...)
 }
 
 void test_interrupts();
-void manual_set_pagetable();
 void print_pagetable();
 
 int main(int, char**);
@@ -100,40 +99,6 @@ void test_interrupts()
     });
     asm volatile ("int $50");
     asm volatile ("int $51");
-}
-
-void manual_set_pagetable()
-{
-    //memory::alloc_page();
-    mmu::cr3 cr3{processor::read_cr3()};
-    logger::info(logger::boot, (char*)"cr3:  ");
-    cr3.print(boot_print);
-    logger::info(logger::boot, (char*)"\n");
-    mmu::pml4e *pml4 = &cr3.PML4ptr()[511];
-    mmu::init(pml4);
-    //u8 unused = *reinterpret_cast<u8*>(0xfffffff100);
-    // *reinterpret_cast<u8*>(0xfffffff100) = 1;
-    pml4->PDPTptr(memory::alloc_page());
-    mmu::pdpte *pdpt = pml4->PDPTptr()+4;
-    mmu::init(pdpt->to_pd());
-    pdpt->type(mmu::pdpt_type::PDPT_PD);
-    pdpt->to_pd()->pd(memory::alloc_page());
-    mmu::pde *pd = pdpt->to_pd()->pd();
-    mmu::init(pd->to_pt());
-    pd->type(mmu::pd_type::PD_PT);
-    pd->to_pt()->pt(memory::alloc_page());
-    mmu::pte *pt = pd->to_pt()->pt();
-    mmu::init(pt);
-    pt->page(memory::alloc_page());
-
-    u8 *phys = reinterpret_cast<u8 *>(0x7ffa000);
-    *phys = 0xFA;
-    mmu::vaddr virt{cr3, pml4, pdpt, pd, pt, 0};
-    logger::info(logger::boot, (char*)"%x\n", *phys);
-    logger::info(logger::boot, (char*)"PML4() :%x\n", virt.PML4());
-    logger::info(logger::boot, "got %x\n", *virt.ptr());
-    *virt.ptr() = 10;
-    logger::info(logger::boot, (char*)"XXX %0x%0x\n", virt.to_u64()>>32, (u32)virt.to_u64());
 }
 
 void print_pagetable()
