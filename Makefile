@@ -27,7 +27,7 @@ objects += $(acpi-objects)
 
 _objects += print.o console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
 	   xen.o entry-xen.o pci.o clock.o runtime.o cruntime.o acpi.o __ctype_b_loc.o smp.o apic.o \
-	   pagetable.o logger.o main.o
+	   pagetable.o logger.o main.o # linenoise.o linenoise_dep.o vsscanf.o
 
 objects += $(_objects:%=$(OUT)/%)
 
@@ -112,6 +112,11 @@ build-so = $(CC) $(CFLAGS) -o $@ $^
 q-build-so = $(call quiet, $(build-so), CC $@)
 adjust-deps = sed -i 's! $(subst .,\.,$<)\b! !g' $(@:.o=.d)
 q-adjust-deps = $(call very-quiet, $(adjust-deps))
+
+$(OUT)/%.o: 3rdparty/linenoise/%.c
+	$(makedir)
+	$(q-build-c)
+	$(q-adjust-deps)
 
 $(OUT)/%.o: %.cc
 	$(makedir)

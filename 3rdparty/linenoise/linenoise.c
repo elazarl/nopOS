@@ -117,16 +117,19 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "linenoise.h"
+#include "malloc.h"
+
+void *_malloc(size_t sz);
+void _free(void *ptr);
 
 #define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
 #define LINENOISE_MAX_LINE 4096
-static char *unsupported_term[] = {"dumb","cons25","emacs",NULL};
 static linenoiseCompletionCallback *completionCallback = NULL;
 
 static struct termios orig_termios; /* In order to restore at exit.*/
 static int rawmode = 0; /* For atexit() function to check if restore is needed*/
 static int mlmode = 0;  /* Multi line mode. Default is single line. */
-static int atexit_registered = 0; /* Register atexit just 1 time. */
+//static int atexit_registered = 0; /* Register atexit just 1 time. */
 static int history_max_len = LINENOISE_DEFAULT_HISTORY_MAX_LEN;
 static int history_len = 0;
 static char **history = NULL;
@@ -171,7 +174,6 @@ enum KEY_ACTION{
 	BACKSPACE =  127    /* Backspace */
 };
 
-static void linenoiseAtExit(void);
 int linenoiseHistoryAdd(const char *line);
 static void refreshLine(struct linenoiseState *l);
 
@@ -204,55 +206,16 @@ void linenoiseSetMultiLine(int ml) {
 /* Return true if the terminal name is in the list of terminals we know are
  * not able to understand basic escape sequences. */
 static int isUnsupportedTerm(void) {
-    char *term = getenv("TERM");
-    int j;
-
-    if (term == NULL) return 0;
-    for (j = 0; unsupported_term[j]; j++)
-        if (!strcasecmp(term,unsupported_term[j])) return 1;
     return 0;
 }
 
 /* Raw mode: 1960 magic shit. */
 static int enableRawMode(int fd) {
-    struct termios raw;
-
-    if (!isatty(STDIN_FILENO)) goto fatal;
-    if (!atexit_registered) {
-        atexit(linenoiseAtExit);
-        atexit_registered = 1;
-    }
-    if (tcgetattr(fd,&orig_termios) == -1) goto fatal;
-
-    raw = orig_termios;  /* modify the original mode */
-    /* input modes: no break, no CR to NL, no parity check, no strip char,
-     * no start/stop output control. */
-    raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    /* output modes - disable post processing */
-    raw.c_oflag &= ~(OPOST);
-    /* control modes - set 8 bit chars */
-    raw.c_cflag |= (CS8);
-    /* local modes - choing off, canonical off, no extended functions,
-     * no signal chars (^Z,^C) */
-    raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    /* control chars - set return condition: min number of bytes and timer.
-     * We want read to return every single byte, without timeout. */
-    raw.c_cc[VMIN] = 1; raw.c_cc[VTIME] = 0; /* 1 byte, no timer */
-
-    /* put terminal in raw mode after flushing */
-    if (tcsetattr(fd,TCSAFLUSH,&raw) < 0) goto fatal;
-    rawmode = 1;
-    return 0;
-
-fatal:
-    errno = ENOTTY;
-    return -1;
+    return 0; /* We're always in raw mode... */
 }
 
 static void disableRawMode(int fd) {
-    /* Don't even check the return value as it's too late. */
-    if (rawmode && tcsetattr(fd,TCSAFLUSH,&orig_termios) != -1)
-        rawmode = 0;
+    rawmode = 0;
 }
 
 /* Use the ESC [6n escape sequence to query the horizontal cursor position
@@ -335,9 +298,9 @@ static void linenoiseBeep(void) {
 static void freeCompletions(linenoiseCompletions *lc) {
     size_t i;
     for (i = 0; i < lc->len; i++)
-        free(lc->cvec[i]);
+        _free(lc->cvec[i]);
     if (lc->cvec != NULL)
-        free(lc->cvec);
+        _free(lc->cvec);
 }
 
 /* This is an helper function for linenoiseEdit() and is called when the
@@ -417,12 +380,12 @@ void linenoiseAddCompletion(linenoiseCompletions *lc, const char *str) {
     size_t len = strlen(str);
     char *copy, **cvec;
 
-    copy = malloc(len+1);
+    copy = _malloc(len+1);
     if (copy == NULL) return;
     memcpy(copy,str,len+1);
     cvec = realloc(lc->cvec,sizeof(char*)*(lc->len+1));
     if (cvec == NULL) {
-        free(copy);
+        _free(copy);
         return;
     }
     lc->cvec = cvec;
@@ -455,7 +418,7 @@ static void abAppend(struct abuf *ab, const char *s, int len) {
 }
 
 static void abFree(struct abuf *ab) {
-    free(ab->b);
+    _free(ab->b);
 }
 
 /* Single line low level line refresh.
@@ -659,7 +622,7 @@ void linenoiseEditHistoryNext(struct linenoiseState *l, int dir) {
     if (history_len > 1) {
         /* Update the current history entry before to
          * overwrite it with the next one. */
-        free(history[history_len - 1 - l->history_index]);
+        _free(history[history_len - 1 - l->history_index]);
         history[history_len - 1 - l->history_index] = strdup(l->buf);
         /* Show the new entry */
         l->history_index += (dir == LINENOISE_HISTORY_PREV) ? 1 : -1;
@@ -772,7 +735,7 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
         switch(c) {
         case ENTER:    /* enter */
             history_len--;
-            free(history[history_len]);
+            _free(history[history_len]);
             if (mlmode) linenoiseEditMoveEnd(&l);
             return (int)l.len;
         case CTRL_C:     /* ctrl-c */
@@ -788,7 +751,7 @@ static int linenoiseEdit(int stdin_fd, int stdout_fd, char *buf, size_t buflen, 
                 linenoiseEditDelete(&l);
             } else {
                 history_len--;
-                free(history[history_len]);
+                _free(history[history_len]);
                 return -1;
             }
             break;
@@ -986,21 +949,21 @@ char *linenoise(const char *prompt) {
 
 /* Free the history, but does not reset it. Only used when we have to
  * exit() to avoid memory leaks are reported by valgrind & co. */
-static void freeHistory(void) {
+void freeHistory(void) {
     if (history) {
         int j;
 
         for (j = 0; j < history_len; j++)
-            free(history[j]);
-        free(history);
+            _free(history[j]);
+        _free(history);
     }
 }
 
 /* At exit we'll try to fix the terminal to the initial conditions. */
-static void linenoiseAtExit(void) {
+/*static void linenoiseAtExit(void) {
     disableRawMode(STDIN_FILENO);
     freeHistory();
-}
+}*/
 
 /* This is the API call to add a new entry in the linenoise history.
  * It uses a fixed array of char pointers that are shifted (memmoved)
@@ -1016,7 +979,7 @@ int linenoiseHistoryAdd(const char *line) {
 
     /* Initialization on first call. */
     if (history == NULL) {
-        history = malloc(sizeof(char*)*history_max_len);
+        history = _malloc(sizeof(char*)*history_max_len);
         if (history == NULL) return 0;
         memset(history,0,(sizeof(char*)*history_max_len));
     }
@@ -1029,7 +992,7 @@ int linenoiseHistoryAdd(const char *line) {
     linecopy = strdup(line);
     if (!linecopy) return 0;
     if (history_len == history_max_len) {
-        free(history[0]);
+        _free(history[0]);
         memmove(history,history+1,sizeof(char*)*(history_max_len-1));
         history_len--;
     }
@@ -1049,19 +1012,19 @@ int linenoiseHistorySetMaxLen(int len) {
     if (history) {
         int tocopy = history_len;
 
-        new = malloc(sizeof(char*)*len);
+        new = _malloc(sizeof(char*)*len);
         if (new == NULL) return 0;
 
         /* If we can't copy everything, free the elements we'll not use. */
         if (len < tocopy) {
             int j;
 
-            for (j = 0; j < tocopy-len; j++) free(history[j]);
+            for (j = 0; j < tocopy-len; j++) _free(history[j]);
             tocopy = len;
         }
         memset(new,0,sizeof(char*)*len);
         memcpy(new,history+(history_len-tocopy), sizeof(char*)*tocopy);
-        free(history);
+        _free(history);
         history = new;
     }
     history_max_len = len;

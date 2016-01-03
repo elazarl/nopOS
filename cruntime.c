@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stddef.h>
 #include <errno.h>
+#include "cruntime.h"
 
 int tolower( int c )
 {
@@ -107,22 +108,6 @@ char * strcpy( char * s1, const char * s2 )
     while ( ( *s1++ = *s2++ ) );
     return rc;
 }
-
-struct _PDCLIB_status_t
-{
-    int      base;   /* base to which the value shall be converted   */
-    int      flags; /* flags and length modifiers                */
-    size_t   n;      /* print: maximum characters to be written      */
-                             /* scan:  number matched conversion specifiers  */
-    size_t   i;      /* number of characters read/written            */
-    size_t   current;/* chars read/written in the CURRENT conversion */
-    char *           s;      /* *sprintf(): target buffer                    */
-                             /* *sscanf():  source string                    */
-    size_t   width;  /* specified field width                        */
-    size_t   prec;   /* specified field precision                    */
-    struct _PDCLIB_file_t * stream; /* *fprintf() / *fscanf() stream         */
-    va_list  arg;    /* argument stack                               */
-};
 
 const char * _PDCLIB_print( const char * spec, struct _PDCLIB_status_t * status );
 
