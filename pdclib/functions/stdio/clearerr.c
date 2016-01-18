@@ -9,10 +9,18 @@
 #include <stdio.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-void clearerr( struct _PDCLIB_file_t * stream )
+void _PDCLIB_clearerr_unlocked( FILE * stream )
 {
     stream->status &= ~( _PDCLIB_ERRORFLAG | _PDCLIB_EOFFLAG );
+}
+
+void clearerr( FILE * stream )
+{
+    _PDCLIB_flockfile( stream );
+    _PDCLIB_clearerr_unlocked( stream );
+    _PDCLIB_funlockfile( stream );
 }
 
 #endif

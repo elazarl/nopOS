@@ -10,13 +10,28 @@
 #include <stdarg.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-int fprintf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, const char * _PDCLIB_restrict format, ... )
+int _PDCLIB_fprintf_unlocked( FILE * _PDCLIB_restrict stream, 
+                      const char * _PDCLIB_restrict format, ... )
 {
     int rc;
     va_list ap;
     va_start( ap, format );
-    rc = vfprintf( stream, format, ap );
+    rc = _PDCLIB_vfprintf_unlocked( stream, format, ap );
+    va_end( ap );
+    return rc;
+}
+
+int fprintf( FILE * _PDCLIB_restrict stream,
+             const char * _PDCLIB_restrict format, ... )
+{
+    int rc;
+    va_list ap;
+    va_start( ap, format );
+    _PDCLIB_flockfile( stream );
+    rc = _PDCLIB_vfprintf_unlocked( stream, format, ap );
+    _PDCLIB_funlockfile( stream );
     va_end( ap );
     return rc;
 }
@@ -24,12 +39,14 @@ int fprintf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, const char * _PDCL
 #endif
 
 #ifdef TEST
+#include <stdint.h>
+#include <stddef.h>
 #define _PDCLIB_FILEID "stdio/fprintf.c"
 #define _PDCLIB_FILEIO
 
 #include <_PDCLIB_test.h>
 
-#define testprintf( stream, format, ... ) fprintf( stream, format, __VA_ARGS__ )
+#define testprintf( stream, ... ) fprintf( stream, __VA_ARGS__ )
 
 int main( void )
 {

@@ -9,13 +9,16 @@
 #include <stdio.h>
 
 #ifndef REGTEST
-
-#include <_PDCLIB_glue.h>
+#include <_PDCLIB_io.h>
 
 #include <stdbool.h>
 #include <string.h>
 
-size_t fread( void * _PDCLIB_restrict ptr, size_t size, size_t nmemb, struct _PDCLIB_file_t * _PDCLIB_restrict stream )
+size_t _PDCLIB_fread_unlocked( 
+    void * _PDCLIB_restrict ptr, 
+    size_t size, size_t nmemb, 
+    FILE * _PDCLIB_restrict stream 
+)
 {
     if ( _PDCLIB_prepread( stream ) == EOF )
     {
@@ -25,20 +28,22 @@ size_t fread( void * _PDCLIB_restrict ptr, size_t size, size_t nmemb, struct _PD
     size_t nmemb_i;
     for ( nmemb_i = 0; nmemb_i < nmemb; ++nmemb_i )
     {
-        for ( size_t size_i = 0; size_i < size; ++size_i )
-        {
-            if ( stream->bufidx == stream->bufend )
-            {
-                if ( _PDCLIB_fillbuffer( stream ) == EOF )
-                {
-                    /* Could not read requested data */
-                    return nmemb_i;
-                }
-            }
-            dest[ nmemb_i * size + size_i ] = stream->buffer[ stream->bufidx++ ];
-        }
+        size_t numread = _PDCLIB_getchars( &dest[ nmemb_i * size ], size, EOF, 
+                                           stream );
+        if( numread != size )
+            break;
     }
     return nmemb_i;
+}
+
+size_t fread( void * _PDCLIB_restrict ptr, 
+              size_t size, size_t nmemb, 
+              FILE * _PDCLIB_restrict stream )
+{
+    _PDCLIB_flockfile( stream );
+    size_t r = _PDCLIB_fread_unlocked( ptr, size, nmemb, stream );
+    _PDCLIB_funlockfile( stream );
+    return r;
 }
 
 #endif

@@ -10,8 +10,12 @@
 #include <stdarg.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-int vsnprintf( char * _PDCLIB_restrict s, size_t n, const char * _PDCLIB_restrict format, _PDCLIB_va_list arg )
+int vsnprintf( char * _PDCLIB_restrict s, 
+               size_t n, 
+               const char * _PDCLIB_restrict format, 
+               _PDCLIB_va_list arg )
 {
     /* TODO: This function should interpret format as multibyte characters.  */
     struct _PDCLIB_status_t status;
@@ -32,7 +36,12 @@ int vsnprintf( char * _PDCLIB_restrict s, size_t n, const char * _PDCLIB_restric
         if ( ( *format != '%' ) || ( ( rc = _PDCLIB_print( format, &status ) ) == format ) )
         {
             /* No conversion specifier, print verbatim */
-            s[ status.i++ ] = *(format++);
+            if ( status.i < n )
+            {
+                s[ status.i ] = *format;
+            }
+            status.i++;
+            format++;
         }
         else
         {
@@ -40,7 +49,10 @@ int vsnprintf( char * _PDCLIB_restrict s, size_t n, const char * _PDCLIB_restric
             format = rc;
         }
     }
-    s[ status.i ] = '\0';
+    if ( status.i  < n )
+    {
+        s[ status.i ] = '\0';
+    }
     va_end( status.arg );
     return status.i;
 }
@@ -50,7 +62,8 @@ int vsnprintf( char * _PDCLIB_restrict s, size_t n, const char * _PDCLIB_restric
 #ifdef TEST
 #define _PDCLIB_FILEID "stdio/vsnprintf.c"
 #define _PDCLIB_STRINGIO
-
+#include <stdint.h>
+#include <stddef.h>
 #include <_PDCLIB_test.h>
 
 static int testprintf( char * s, const char * format, ... )

@@ -10,25 +10,15 @@
 
 #ifndef REGTEST
 
-#include <inttypes.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include <errno.h>
 #include <_PDCLIB_glue.h>
 
-/*#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>*/
-
-extern struct _PDCLIB_file_t * _PDCLIB_filelist;
-
-/* This is an example implementation of tmpfile() fit for use with POSIX
-   kernels.
+/* This is a stub implementation of tmpfile
 */
-struct _PDCLIB_file_t * tmpfile( void )
+FILE* tmpfile( void )
 {
-    __builtin_abort();
+    errno = ENOTSUP;
+    return NULL;
 }
 
 #endif
@@ -37,23 +27,8 @@ struct _PDCLIB_file_t * tmpfile( void )
 #include <_PDCLIB_test.h>
 #include <string.h>
 
-int main()
+int main( void )
 {
-    FILE * fh;
-#ifndef REGTEST
-    char filename[ L_tmpnam ];
-    FILE * fhtest;
-#endif
-    TESTCASE( ( fh = tmpfile() ) != NULL );
-    TESTCASE( fputc( 'x', fh ) == 'x' );
-    /* Checking that file is actually there */
-    TESTCASE_NOREG( strcpy( filename, fh->filename ) == filename );
-    TESTCASE_NOREG( ( fhtest = fopen( filename, "r" ) ) != NULL );
-    TESTCASE_NOREG( fclose( fhtest ) == 0 );
-    /* Closing tmpfile */
-    TESTCASE( fclose( fh ) == 0 );
-    /* Checking that file was deleted */
-    TESTCASE_NOREG( fopen( filename, "r" ) == NULL );
     return TEST_RESULTS;
 }
 

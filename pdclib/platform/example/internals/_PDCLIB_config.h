@@ -1,4 +1,5 @@
-/* $Id$ */
+#ifndef _PDCLIB_CONFIG_H
+#define _PDCLIB_CONFIG_H
 
 /* Internal PDCLib configuration <_PDCLIB_config.h>
    (Generic Template)
@@ -26,11 +27,13 @@
 /* specific platforms, e.g. by swapping int instead of char.                  */
 #define _PDCLIB_memswp( i, j, size ) char tmp; do { tmp = *i; *i++ = *j; *j++ = tmp; } while ( --size );
 
-/* Define this to some compiler directive that can be written after the       */
-/* parameter list of a function declaration to indicate the function does     */
-/* never return. If your compiler does not support such a directive, define   */
-/* to nothing. (This is to avoid warnings with the exit functions under GCC.) */
-#define _PDCLIB_NORETURN __attribute__(( noreturn ))
+/* The maximum value that errno can be set to. This is used to set the size   */
+/* of the array in struct lconv (<locale.h>) holding error messages for the   */
+/* strerror() and perror() functions. (If you change this value because you   */
+/* are using additional errno values, you *HAVE* to provide appropriate error */
+/* messages for *ALL* locales.)                                               */
+/* Default is 4 (0, ERANGE, EDOM, EILSEQ).                                    */
+#define _PDCLIB_ERRNO_MAX 4
 
 /* -------------------------------------------------------------------------- */
 /* Integers                                                                   */
@@ -52,7 +55,11 @@
 /* compiler manuals.                                                          */
 #define _PDCLIB_SHRT_BYTES  2
 #define _PDCLIB_INT_BYTES   4
-#define _PDCLIB_LONG_BYTES  4
+#if defined(__LP64__) || defined(_LP64)
+#  define _PDCLIB_LONG_BYTES 8
+#else
+#  define _PDCLIB_LONG_BYTES  4
+#endif
 #define _PDCLIB_LLONG_BYTES 8
 
 /* <stdlib.h> defines the div() function family that allows taking quotient   */
@@ -122,8 +129,8 @@ struct _PDCLIB_lldiv_t
 /* -------------------------------------------------------------------------- */
 
 /* The result type of substracting two pointers */
-#define _PDCLIB_ptrdiff int
-#define _PDCLIB_PTRDIFF INT
+#define _PDCLIB_ptrdiff long
+#define _PDCLIB_PTRDIFF LONG
 #define _PDCLIB_PTR_CONV
 
 /* An integer type that can be accessed as atomic entity (think asynchronous
@@ -134,17 +141,18 @@ struct _PDCLIB_lldiv_t
 #define _PDCLIB_SIG_ATOMIC INT
 
 /* Result type of the 'sizeof' operator (must be unsigned) */
-#define _PDCLIB_size unsigned int
-#define _PDCLIB_SIZE UINT
+#define _PDCLIB_size unsigned long
+#define _PDCLIB_SIZE ULONG
 
 /* Large enough an integer to hold all character codes of the largest supported
    locale.
 */
-#define _PDCLIB_wchar unsigned short 
-#define _PDCLIB_WCHAR USHRT
+#define _PDCLIB_wint  signed int
+#define _PDCLIB_wchar unsigned int
+#define _PDCLIB_WCHAR UINT
 
-#define _PDCLIB_intptr int
-#define _PDCLIB_INTPTR INT
+#define _PDCLIB_intptr long
+#define _PDCLIB_INTPTR LONG
 
 /* Largest supported integer type. Implementation note: see _PDCLIB_atomax(). */
 #define _PDCLIB_intmax long long int
@@ -161,6 +169,49 @@ struct _PDCLIB_imaxdiv_t
     _PDCLIB_intmax quot;
     _PDCLIB_intmax rem;
 };
+
+/* <time.h>: time_t 
+ * The C standard doesn't define what representation of time is stored in 
+ * time_t when returned by time() , but POSIX defines it to be seconds since the
+ * UNIX epoch and most appplications expect that. 
+ *
+ * time_t is also used as the tv_sec member of struct timespec, which *is* 
+ * defined as a linear count of seconds.
+ *
+ * time_t is defined as a "real type", so may be a floating point type, but with
+ * the presence of the nanosecond accurate struct timespec, and with the lack of
+ * any functions for manipulating more accurate values of time_t, this is 
+ * probably not useful.
+ */
+#define _PDCLIB_time  unsigned long long
+
+/* <time.h>: clock_t
+ *
+ * A count of "clock ticks", where the length of a clock tick is unspecified by
+ * the standard. The implementation is required to provide a macro, 
+ * CLOCKS_PER_SEC, which is the number of "clock ticks" which corresponds to one
+ * second.
+ *
+ * clock_t may be any real type (i.e. integral or floating), and its type on
+ * various systems differs. 
+ *
+ * On XSI systems, CLOCKS_PER_SEC must be defined to 1000000
+ */
+#define _PDCLIB_clock double
+#define _PDCLIB_CLOCKS_PER_SEC 1000000
+
+/* <time.h>: TIME_UTC
+ *
+ * The TIME_UTC parameter is passed to the timespec_get function in order to get
+ * the system time in UTC since an implementation defined epoch (not necessarily
+ * the same as that used for time_t). That said, on POSIX the obvious 
+ * implementation of timespec_get for TIME_UTC is to wrap 
+ * clock_gettime(CLOCK_REALTIME, ...), which is defined as time in UTC since the
+ * same epoch.
+ *
+ * This may be any non-zero integer value.
+ */
+#define _PDCLIB_TIME_UTC 1
 
 /* -------------------------------------------------------------------------- */
 /* Floating Point                                                             */
@@ -188,6 +239,22 @@ struct _PDCLIB_imaxdiv_t
    80bit IEC 60559 double-extended format (64bit mantissa) is DECIMAL_DIG 21.
 */
 #define _PDCLIB_DECIMAL_DIG 17
+
+/* Floating point types
+ *
+ * PDCLib (at present) assumes IEEE 754 floating point formats
+ * The following names are used:
+ *    SINGLE:   IEEE 754 single precision (32-bit)
+ *    DOUBLE:   IEEE 754 double precision (64-bit)
+ *    EXTENDED: IEEE 754 extended precision (80-bit, as x87)
+ */
+#define _PDCLIB_FLOAT_TYPE   SINGLE
+#define _PDCLIB_DOUBLE_TYPE  DOUBLE
+#if defined(__i386__) || defined(__amd64__)
+  #define _PDCLIB_LDOUBLE_TYPE EXTENDED
+#else
+  #define _PDCLIB_LDOUBLE_TYPE DOUBLE
+#endif
 
 /* -------------------------------------------------------------------------- */
 /* Platform-dependent macros defined by the standard headers.                 */
@@ -235,23 +302,24 @@ typedef char * _PDCLIB_va_list;
    to an appropriate value. (Too small, and malloc() will call the kernel too
    often. Too large, and you will waste memory.)
 */
-#define _PDCLIB_PAGESIZE 4096
+#define _PDCLIB_MALLOC_PAGESIZE 4096
+#define _PDCLIB_MALLOC_ALIGN 16
+#define _PDCLIB_MALLOC_GRANULARITY 64*1024
+#define _PDCLIB_MALLOC_TRIM_THRESHOLD 2*1024*1024
+#define _PDCLIB_MALLOC_MMAP_THRESHOLD 256*1024
+#define _PDCLIB_MALLOC_RELEASE_CHECK_RATE 4095
 
-/* Set this to the minimum memory node size. Any malloc() for a smaller size
-   will be satisfied by a malloc() of this size instead (to avoid excessive
-   fragmentation).
-*/
-#define _PDCLIB_MINALLOC 8
+/* TODO: Better document these */
+
+/* Locale --------------------------------------------------------------------*/
+
+/* Locale method. See _PDCLIB_locale.h */
+/* #define _PDCLIB_LOCALE_METHOD _PDCLIB_LOCALE_METHOD_TSS */
+
+/* wchar_t encoding */
+#define _PDCLIB_WCHAR_ENCODING _PDCLIB_WCHAR_ENCODING_UCS4
 
 /* I/O ---------------------------------------------------------------------- */
-
-/* The type of the file descriptor returned by _PDCLIB_open(). */
-typedef int _PDCLIB_fd_t;
-
-/* The value (of type _PDCLIB_fd_t) returned by _PDCLIB_open() if the operation
-   failed.
-*/
-#define _PDCLIB_NOHANDLE ( (_PDCLIB_fd_t) -1 )
 
 /* The default size for file buffers. Must be at least 256. */
 #define _PDCLIB_BUFSIZ 1024
@@ -285,3 +353,122 @@ typedef int _PDCLIB_fd_t;
    this capability dependent on implementation-defined behaviour (not good).
 */
 #define _PDCLIB_UNGETCBUFSIZE 1
+
+/* errno -------------------------------------------------------------------- */
+
+/* These are the values that _PDCLIB_errno can be set to by the library.
+
+   By keeping PDCLib's errno in the _PDCLIB_* namespace, the library is capable
+   to "translate" between errno values used by the hosting operating system and
+   those used and passed out by the library.
+
+   Example: In the example platform, the remove() function uses the unlink()
+   system call as backend. Linux sets its errno to EISDIR if you try to unlink()
+   a directory, but POSIX demands EPERM. Within the remove() function, you can
+   catch the 'errno == EISDIR', and set '_PDCLIB_errno = _PDCLIB_EPERM'. Anyone
+   using PDCLib's <errno.h> will "see" EPERM instead of EISDIR (the _PDCLIB_*
+   prefix removed by <errno.h> mechanics).
+
+   If you do not want that kind of translation, you might want to "match" the
+   values used by PDCLib with those used by the host OS, as to avoid confusion.
+
+   The C standard only defines three distinct errno values: ERANGE, EDOM, and
+   EILSEQ. The standard leaves it up to "the implementation" whether there are
+   any more beyond those three. There is some controversy as to whether errno is
+   such a good idea at all, so you might want to come up with a different error
+   reporting facility for your platform. 
+
+   Things used to say "Since errno values beyond the three defined by the 
+   standard are not portable anyway (unless you look at POSIX), having your own
+   error reporting facility would not hurt anybody either." at this point. 
+   However, then somebody birthed C++11 into the world, which copied POSIX's 
+   errno values into C++. Yes, even EINTR. Therefore, this library defines 
+   them. That said, thats nothing stopping you from using your own error 
+   reporting facility for things outside the C library.
+
+   Sometimes the standard says to set errno to indicate an error, but does not 
+   prescribe a value. We will use a value from the following list. If POSIX 
+   defines a value, we use that; otherwise, we use as seems suitable.
+
+   If porting to a system which uses an errno-like reporting system (e.g. a 
+   UNIX), you'll probably want to define them to match what the OS uses
+*/
+/* C errno values */
+#define _PDCLIB_ERANGE 1
+#define _PDCLIB_EDOM   2
+#define _PDCLIB_EILSEQ 3
+
+/* C++11/POSIX errno values */
+#define _PDCLIB_E2BIG 4
+#define _PDCLIB_ECONNRESET 5
+#define _PDCLIB_EISCONN 6
+#define _PDCLIB_ENOENT 7
+#define _PDCLIB_ENOTRECOVERABLE 8
+#define _PDCLIB_EROFS 9
+#define _PDCLIB_EACCES 10
+#define _PDCLIB_EDEADLK 11
+#define _PDCLIB_EISDIR 12
+#define _PDCLIB_ENOEXEC 13
+#define _PDCLIB_ENOTSOCK 14
+#define _PDCLIB_ESPIPE 15
+#define _PDCLIB_EADDRINUSE 16
+#define _PDCLIB_EDESTADDRREQ 17
+#define _PDCLIB_ELOOP 18
+#define _PDCLIB_ENOLCK 19
+#define _PDCLIB_ENOTSUPP 20
+#define _PDCLIB_ESRCH 21
+#define _PDCLIB_EADDRNOTAVAIL 22
+#define _PDCLIB_EMFILE 23
+#define _PDCLIB_ENOLINK 24
+#define _PDCLIB_ENOTTY 25
+#define _PDCLIB_ETIME 26
+#define _PDCLIB_EAFNOSUPPORT 27
+#define _PDCLIB_EEXIST 28
+#define _PDCLIB_EMLINK 29
+#define _PDCLIB_ENOMEM 30
+#define _PDCLIB_ENXIO 31
+#define _PDCLIB_ETIMEDOUT 32
+#define _PDCLIB_EAGAIN 33
+#define _PDCLIB_EFAULT 34
+#define _PDCLIB_EMSGSIZE 35
+#define _PDCLIB_ENOMSG 36
+#define _PDCLIB_EOPNOTSUPP 37
+#define _PDCLIB_ETXTBSY 38
+#define _PDCLIB_EALREADY 39
+#define _PDCLIB_EFBIG 40
+#define _PDCLIB_ENAMETOOLONG 41
+#define _PDCLIB_ENOPROTOOPT 42
+#define _PDCLIB_EOVERFLOW 43
+#define _PDCLIB_EWOULDBLOCK _PDCLIB_EAGAIN
+#define _PDCLIB_EBADF 44
+#define _PDCLIB_EHOSTUNREACH 45
+#define _PDCLIB_ENETDOWN 46
+#define _PDCLIB_ENOSPC 47
+#define _PDCLIB_EOWNERDEAD 48
+#define _PDCLIB_EXDEV 49
+#define _PDCLIB_EBADMSG 50
+#define _PDCLIB_EIDRM 51
+#define _PDCLIB_ENETRESET 52
+#define _PDCLIB_ENOSR 53
+#define _PDCLIB_EPERM 54
+#define _PDCLIB_EBUSY 55
+#define _PDCLIB_ENETUNREACH 56
+#define _PDCLIB_ENOSTR 57
+#define _PDCLIB_EPIPE 58
+#define _PDCLIB_ECANCELED 59
+#define _PDCLIB_EINPROGRESS 60
+#define _PDCLIB_ENFILE 61
+#define _PDCLIB_ENOSYS 62
+#define _PDCLIB_EPROTO 63
+#define _PDCLIB_ECHILD 64
+#define _PDCLIB_EINTR 65
+#define _PDCLIB_ENOBUFS 66
+#define _PDCLIB_ENOTCONN 67
+#define _PDCLIB_EPROTONOSUPPORT 68
+#define _PDCLIB_ECONNABORTED 69
+#define _PDCLIB_EINVAL 70
+#define _PDCLIB_ENODATA 71
+#define _PDCLIB_ENOTDIR 72
+#define _PDCLIB_EPROTOTYPE 73
+
+#endif

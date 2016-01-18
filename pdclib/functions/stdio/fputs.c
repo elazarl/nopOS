@@ -9,9 +9,10 @@
 #include <stdio.h>
 
 #ifndef REGTEST
-#include <_PDCLIB_glue.h>
+#include <_PDCLIB_io.h>
 
-int fputs( const char * _PDCLIB_restrict s, struct _PDCLIB_file_t * _PDCLIB_restrict stream )
+int _PDCLIB_fputs_unlocked( const char * _PDCLIB_restrict s, 
+                    FILE * _PDCLIB_restrict stream )
 {
     if ( _PDCLIB_prepwrite( stream ) == EOF )
     {
@@ -43,6 +44,15 @@ int fputs( const char * _PDCLIB_restrict s, struct _PDCLIB_file_t * _PDCLIB_rest
         }
     }
     return 0;
+}
+
+int fputs( const char * _PDCLIB_restrict s,
+           FILE * _PDCLIB_restrict stream )
+{
+    _PDCLIB_flockfile( stream );
+    int r = _PDCLIB_fputs_unlocked( s, stream );
+    _PDCLIB_funlockfile( stream );
+    return r;
 }
 
 #endif

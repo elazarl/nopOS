@@ -10,6 +10,7 @@
 #include <stdarg.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
 int printf( const char * _PDCLIB_restrict format, ... )
 {
@@ -21,15 +22,27 @@ int printf( const char * _PDCLIB_restrict format, ... )
     return rc;
 }
 
+int _PDCLIB_printf_unlocked( const char * _PDCLIB_restrict format, ... )
+{
+    int rc;
+    va_list ap;
+    va_start( ap, format );
+    rc = _PDCLIB_vfprintf_unlocked( stdout, format, ap );
+    va_end( ap );
+    return rc;
+}
+
 #endif
 
 #ifdef TEST
 #define _PDCLIB_FILEID "stdio/printf.c"
 #define _PDCLIB_FILEIO
+#include <stdint.h>
+#include <stddef.h>
 
 #include <_PDCLIB_test.h>
 
-#define testprintf( stream, format, ... ) printf( format, __VA_ARGS__ )
+#define testprintf( stream, ... ) printf( __VA_ARGS__ )
 
 int main( void )
 {

@@ -9,20 +9,28 @@
 #include <stdio.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-#include <_PDCLIB_glue.h>
-
-int fgetc( struct _PDCLIB_file_t * stream )
+int _PDCLIB_fgetc_unlocked( FILE * stream )
 {
     if ( _PDCLIB_prepread( stream ) == EOF )
     {
         return EOF;
     }
-    if ( stream->ungetidx > 0 )
-    {
-        return (unsigned char)stream->ungetbuf[ --(stream->ungetidx) ];
-    }
-    return (unsigned char)stream->buffer[stream->bufidx++];
+
+    char c;
+
+    size_t n = _PDCLIB_getchars( &c, 1, EOF, stream );
+
+    return n == 0 ? EOF : (unsigned char) c;
+}
+
+int fgetc( FILE * stream )
+{
+    _PDCLIB_flockfile( stream );
+    int c = _PDCLIB_fgetc_unlocked( stream );
+    _PDCLIB_funlockfile( stream );
+    return c;
 }
 
 #endif

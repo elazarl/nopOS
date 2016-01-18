@@ -9,11 +9,11 @@
 #include <stdio.h>
 
 #ifndef REGTEST
-#include <_PDCLIB_glue.h>
+#include <_PDCLIB_io.h>
 
-extern struct _PDCLIB_file_t * _PDCLIB_filelist;
+extern FILE * _PDCLIB_filelist;
 
-int fflush( struct _PDCLIB_file_t * stream )
+int _PDCLIB_fflush_unlocked( FILE * stream )
 {
     if ( stream == NULL )
     {
@@ -37,6 +37,14 @@ int fflush( struct _PDCLIB_file_t * stream )
     {
         return _PDCLIB_flushbuffer( stream );
     }
+}
+
+int fflush( FILE * stream )
+{
+    _PDCLIB_flockfile( stream );
+    int res = _PDCLIB_fflush_unlocked(stream);
+    _PDCLIB_funlockfile( stream );
+    return res;
 }
                 
 #endif

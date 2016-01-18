@@ -7,24 +7,13 @@
 */
 
 #include <ctype.h>
-#include <stdbool.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_locale.h>
 
 int isspace( int c )
 {
-    switch ( c )
-    {
-        case ' ':
-        case '\f':
-        case '\n':
-        case '\r':
-        case '\t':
-        case '\v':
-            return true;
-        default:
-            return false;
-    }
+    return ( _PDCLIB_threadlocale()->_CType[c].flags & _PDCLIB_CTYPE_SPACE );
 }
 
 #endif

@@ -9,11 +9,9 @@
 #include <stdio.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-#define _PDCLIB_GLUE_H _PDCLIB_GLUE_H
-#include <_PDCLIB_glue.h>
-
-char * fgets( char * _PDCLIB_restrict s, int size, struct _PDCLIB_file_t * _PDCLIB_restrict stream )
+char * _PDCLIB_fgets_unlocked( char * _PDCLIB_restrict s, int size, FILE * _PDCLIB_restrict stream )
 {
     if ( size == 0 )
     {
@@ -29,22 +27,20 @@ char * fgets( char * _PDCLIB_restrict s, int size, struct _PDCLIB_file_t * _PDCL
         return NULL;
     }
     char * dest = s;
-    while ( ( ( *dest++ = stream->buffer[stream->bufidx++] ) != '\n' ) && --size > 0 )
-    {
-        if ( stream->bufidx == stream->bufend )
-        {
-            if ( _PDCLIB_fillbuffer( stream ) == EOF )
-            {
-                /* In case of error / EOF before a character is read, this
-                   will lead to a \0 be written anyway. Since the results
-                   are "indeterminate" by definition, this does not hurt.
-                */
-                break;
-            }
-        }
-    }
+
+    dest += _PDCLIB_getchars( dest, size - 1, '\n', stream );
+
     *dest = '\0';
     return ( dest == s ) ? NULL : s;
+}
+
+char * fgets( char * _PDCLIB_restrict s, int size, 
+              FILE * _PDCLIB_restrict stream )
+{
+    _PDCLIB_flockfile( stream );
+    char* r = _PDCLIB_fgets_unlocked( s, size, stream );
+    _PDCLIB_funlockfile( stream );
+    return r;
 }
 
 #endif

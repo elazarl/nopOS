@@ -1,4 +1,3 @@
-#include "malloc.h"
 #include <string.h>
 
 #define MAX_ALLOC 1000
@@ -43,10 +42,25 @@ struct pool pool = { .p = buf, .total = sizeof(buf)};
 void *_malloc(size_t sz) {
     return pool_alloc(&pool, sz);
 }
+void *malloc(size_t sz) { return _malloc(sz); }
+
+void *calloc(size_t nmemb, size_t size) {
+    void *rv = _malloc(nmemb*size);
+    memset(rv, 0, nmemb*size);
+    return rv;
+}
+
+void *_realloc(void *ptr, size_t sz) {
+    pool_free(&pool, ptr);
+    return pool_alloc(&pool, sz);
+}
+
+void *realloc(void *ptr, size_t sz) { return _realloc(ptr, sz); }
 
 void _free(void *ptr) {
     pool_free(&pool, ptr);
 }
+void free(void *ptr) { _free(ptr); }
 
 int isatty(int fd) {
     return 1;

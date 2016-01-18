@@ -9,14 +9,13 @@
 #include <stdio.h>
 
 #ifndef REGTEST
-
-#include <_PDCLIB_glue.h>
+#include <_PDCLIB_io.h>
 
 /* Write the value c (cast to unsigned char) to the given stream.
    Returns c if successful, EOF otherwise.
    If a write error occurs, the error indicator of the stream is set.
 */
-int fputc( int c, struct _PDCLIB_file_t * stream )
+int _PDCLIB_fputc_unlocked( int c, FILE * stream )
 {
     if ( _PDCLIB_prepwrite( stream ) == EOF )
     {
@@ -32,6 +31,14 @@ int fputc( int c, struct _PDCLIB_file_t * stream )
         return ( _PDCLIB_flushbuffer( stream ) == 0 ) ? c : EOF;
     }
     return c;
+}
+
+int fputc( int c, FILE * stream )
+{
+    _PDCLIB_flockfile( stream );
+    int r = _PDCLIB_fputc_unlocked( c, stream );
+    _PDCLIB_funlockfile( stream );
+    return r;
 }
 
 #endif

@@ -1,4 +1,5 @@
-/* $Id$ */
+#ifndef __PDCLIB_INT_H
+#define __PDCLIB_INT_H __PDCLIB_INT_H
 
 /* PDCLib internal integer logic <_PDCLIB_int.h>
 
@@ -11,15 +12,8 @@
 /* would be considered a bug / missing feature: notify the author(s).         */
 /* -------------------------------------------------------------------------- */
 
-#ifndef _PDCLIB_CONFIG_H
-#define _PDCLIB_CONFIG_H _PDCLIB_CONFIG_H
 #include <_PDCLIB_config.h>
-#endif
-
-#ifndef _PDCLIB_AUX_H
-#define _PDCLIB_AUX_H _PDCLIB_AUX_H
 #include <_PDCLIB_aux.h>
-#endif
 
 /* null pointer constant */
 #define _PDCLIB_NULL 0
@@ -168,7 +162,7 @@ typedef unsigned long      _PDCLIB_uint32_t;
 #endif
 
 /* Setting 'int64_t', its limits, its literal, and conversion macros.         */
-#if     _PDCLIB_LONG_BYTES == 8
+#if     _PDCLIB_LONG_BYTES == 8 && !defined(_PDCLIB_INT64_IS_LLONG)
 typedef signed long        _PDCLIB_int64_t;
 typedef unsigned long      _PDCLIB_uint64_t;
 #define _PDCLIB_INT64_MAX  _PDCLIB_LONG_MAX
@@ -236,7 +230,12 @@ typedef _PDCLIB_ptrdiff     _PDCLIB_ptrdiff_t;
 typedef _PDCLIB_size     _PDCLIB_size_t;
 #define _PDCLIB_SIZE_MAX _PDCLIB_concat( _PDCLIB_concat( _PDCLIB_, _PDCLIB_SIZE ), _MAX )
 
-typedef _PDCLIB_wchar     _PDCLIB_wchar_t;
+typedef _PDCLIB_wint      _PDCLIB_wint_t;
+#ifndef __cplusplus
+    typedef _PDCLIB_wchar     _PDCLIB_wchar_t;
+#else
+    typedef wchar_t _PDCLIB_wchar_t;
+#endif
 #define _PDCLIB_WCHAR_MIN _PDCLIB_concat( _PDCLIB_concat( _PDCLIB_, _PDCLIB_WCHAR ), _MIN )
 #define _PDCLIB_WCHAR_MAX _PDCLIB_concat( _PDCLIB_concat( _PDCLIB_, _PDCLIB_WCHAR ), _MAX )
 
@@ -255,57 +254,34 @@ typedef unsigned _PDCLIB_intmax _PDCLIB_uintmax_t;
 #define _PDCLIB_UINTMAX_C( value ) _PDCLIB_concat( value, _PDCLIB_concat( u, _PDCLIB_INTMAX_LITERAL ) )
 
 /* -------------------------------------------------------------------------- */
-/* Various <stdio.h> internals                                                */
+/* Various <time.h> internals                                                 */
 /* -------------------------------------------------------------------------- */
 
-/* Flags for representing mode (see fopen()). Note these must fit the same
-   status field as the _IO?BF flags in <stdio.h> and the internal flags below.
-*/
-#define _PDCLIB_FREAD     8u
-#define _PDCLIB_FWRITE   16u
-#define _PDCLIB_FAPPEND  32u 
-#define _PDCLIB_FRW      64u
-#define _PDCLIB_FBIN    128u
+typedef _PDCLIB_time            _PDCLIB_time_t;
+typedef _PDCLIB_clock           _PDCLIB_clock_t;
 
-/* Internal flags, made to fit the same status field as the flags above. */
-/* -------------------------------------------------------------------------- */
-/* free() the buffer memory on closing (false for user-supplied buffer) */
-#define _PDCLIB_FREEBUFFER   512u
-/* stream has encountered error / EOF */
-#define _PDCLIB_ERRORFLAG   1024u
-#define _PDCLIB_EOFFLAG     2048u
-/* stream is wide-oriented */
-#define _PDCLIB_WIDESTREAM  4096u
-/* stream is byte-oriented */
-#define _PDCLIB_BYTESTREAM  8192u
-/* file associated with stream should be remove()d on closing (tmpfile()) */
-#define _PDCLIB_DELONCLOSE 16384u
-/* stream handle should not be free()d on close (stdin, stdout, stderr) */
-#define _PDCLIB_STATIC     32768u
+#if !defined(_PDCLIB_DEFINE_STRUCT_TIMESPEC)
+#define _PDCLIB_DEFINE_STRUCT_TIMESPEC()    \
+    struct timespec {                       \
+        time_t tv_sec;                      \
+        long tv_nsec;                       \
+    };
+#endif
 
-/* Position / status structure for getpos() / fsetpos(). */
-struct _PDCLIB_fpos_t
-{
-    _PDCLIB_uint64_t offset; /* File position offset */
-    int              status; /* Multibyte parsing state (unused, reserved) */
-};
-
-/* FILE structure */
-struct _PDCLIB_file_t
-{
-    _PDCLIB_fd_t            handle;   /* OS file handle */
-    char *                  buffer;   /* Pointer to buffer memory */
-    _PDCLIB_size_t          bufsize;  /* Size of buffer */
-    _PDCLIB_size_t          bufidx;   /* Index of current position in buffer */
-    _PDCLIB_size_t          bufend;   /* Index of last pre-read character in buffer */
-    struct _PDCLIB_fpos_t   pos;      /* Offset and multibyte parsing state */
-    _PDCLIB_size_t          ungetidx; /* Number of ungetc()'ed characters */
-    unsigned char *         ungetbuf; /* ungetc() buffer */
-    unsigned int            status;   /* Status flags; see above */
-    /* multibyte parsing status to be added later */
-    char *                  filename; /* Name the current stream has been opened with */
-    struct _PDCLIB_file_t * next;     /* Pointer to next struct (internal) */
-};
+#if !defined(_PDCLIB_DEFINE_STRUCT_TM)
+#define _PDCLIB_DEFINE_STRUCT_TM()          \
+    struct tm {                             \
+        int tm_sec;                         \
+        int tm_min;                         \
+        int tm_hour;                        \
+        int tm_mday;                        \
+        int tm_mon;                         \
+        int tm_year;                        \
+        int tm_wday;                        \
+        int tm_yday;                        \
+        int tm_isdst;                       \
+    };
+#endif
 
 /* -------------------------------------------------------------------------- */
 /* Internal data types                                                        */
@@ -316,36 +292,6 @@ struct _PDCLIB_exitfunc_t
 {
     struct _PDCLIB_exitfunc_t * next;
     void (*func)( void );
-};
-
-/* Structures required by malloc(), realloc(), and free(). */
-struct _PDCLIB_headnode_t
-{
-    struct _PDCLIB_memnode_t * first;
-    struct _PDCLIB_memnode_t * last;
-};
-
-struct _PDCLIB_memnode_t
-{
-    _PDCLIB_size_t size;
-    struct _PDCLIB_memnode_t * next;
-};
-
-/* Status structure required by _PDCLIB_print(). */
-struct _PDCLIB_status_t
-{
-    int              base;   /* base to which the value shall be converted   */
-    _PDCLIB_int_fast32_t flags; /* flags and length modifiers                */
-    _PDCLIB_size_t   n;      /* print: maximum characters to be written      */
-                             /* scan:  number matched conversion specifiers  */
-    _PDCLIB_size_t   i;      /* number of characters read/written            */
-    _PDCLIB_size_t   current;/* chars read/written in the CURRENT conversion */
-    char *           s;      /* *sprintf(): target buffer                    */
-                             /* *sscanf():  source string                    */
-    _PDCLIB_size_t   width;  /* specified field width                        */
-    _PDCLIB_size_t   prec;   /* specified field precision                    */
-    struct _PDCLIB_file_t * stream; /* *fprintf() / *fscanf() stream         */
-    _PDCLIB_va_list  arg;    /* argument stack                               */
 };
 
 /* -------------------------------------------------------------------------- */
@@ -363,66 +309,84 @@ _PDCLIB_uintmax_t _PDCLIB_strtox_main( const char ** p, unsigned int base, _PDCL
 extern char _PDCLIB_digits[];
 extern char _PDCLIB_Xdigits[];
 
-/* The worker for all printf() type of functions. The pointer spec should point
-   to the introducing '%' of a conversion specifier. The status structure is to
-   be that of the current printf() function, of which the members n, s, stream
-   and arg will be preserved; i will be updated; and all others will be trashed
-   by the function.
-   Returns a pointer to the first character not parsed as conversion specifier.
-*/
-const char * _PDCLIB_print( const char * spec, struct _PDCLIB_status_t * status );
-
-/* The worker for all scanf() type of functions. The pointer spec should point
-   to the introducing '%' of a conversion specifier. The status structure is to
-   be that of the current scanf() function, of which the member stream will be
-   preserved; n, i, and s will be updated; and all others will be trashed by
-   the function.
-   Returns a pointer to the first character not parsed as conversion specifier,
-   or NULL in case of error.
-   FIXME: Should distinguish between matching and input error
-*/
-const char * _PDCLIB_scan( const char * spec, struct _PDCLIB_status_t * status );
-
-/* Parsing any fopen() style filemode string into a number of flags. */
-unsigned int _PDCLIB_filemode( const char * mode );
-
-/* Sanity checking and preparing of read buffer, should be called first thing 
-   by any stdio read-data function.
-   Returns 0 on success, EOF on error.
-   On error, EOF / error flags and errno are set appropriately.
-*/
-int _PDCLIB_prepread( struct _PDCLIB_file_t * stream );
-
-/* Sanity checking, should be called first thing by any stdio write-data
-   function.
-   Returns 0 on success, EOF on error.
-   On error, error flags and errno are set appropriately.
-*/
-int _PDCLIB_prepwrite( struct _PDCLIB_file_t * stream );
-
-/* Closing all streams on program exit */
-void _PDCLIB_closeall( void );
-
 /* -------------------------------------------------------------------------- */
-/* errno                                                                      */
+/* locale / wchar / uchar                                                     */
 /* -------------------------------------------------------------------------- */
 
-extern int _PDCLIB_errno;
-int * _PDCLIB_errno_func( void );
+#ifndef __cplusplus
+typedef _PDCLIB_uint16_t        _PDCLIB_char16_t;
+typedef _PDCLIB_uint32_t        _PDCLIB_char32_t;
+#else
+typedef char16_t                _PDCLIB_char16_t;
+typedef char32_t                _PDCLIB_char32_t;
+#endif
 
-/* ERANGE and EDOM are specified by the standard. */
-#define _PDCLIB_ERANGE 1
-#define _PDCLIB_EDOM 2
-/* Used in the example implementation for any kind of I/O error. */
-#define _PDCLIB_EIO 3
-/* Used in the example implementation for "unknown error". */
-#define _PDCLIB_EUNKNOWN 4
-/* Used in the example implementation for "invalid parameter value". */
-#define _PDCLIB_EINVAL 5
-/* Used in the example implementation for "I/O retries exceeded". */
-#define _PDCLIB_ERETRY 6
-/* One larger than the largest used errno */
-#define _PDCLIB_EMAX 7
+typedef struct _PDCLIB_mbstate {
+    union {
+        /* Is this the best way to represent this? Is this big enough? */
+        _PDCLIB_uint64_t _St64[15];
+        _PDCLIB_uint32_t _St32[31];
+        _PDCLIB_uint16_t _St16[62];
+        unsigned char    _StUC[124];
+        signed   char    _StSC[124];
+                 char    _StC [124];
+    };
 
-/* TODO: Doing this via a static array is not the way to do it. */
-char const * _PDCLIB_errno_texts[ _PDCLIB_EMAX ];
+    /* c16/related functions: Surrogate storage
+     *
+     * If zero, no surrogate pending. If nonzero, surrogate.
+     */
+    _PDCLIB_uint16_t     _Surrogate;
+
+    /* In cases where the underlying codec is capable of regurgitating a 
+     * character without consuming any extra input (e.g. a surrogate pair in a
+     * UCS-4 to UTF-16 conversion) then these fields are used to track that 
+     * state. In particular, they are used to buffer/fake the input for mbrtowc
+     * and similar functions.
+     *
+     * See _PDCLIB_encoding.h for values of _PendState and the resultant value 
+     * in _PendChar.
+     */
+    unsigned char _PendState;
+             char _PendChar;
+} _PDCLIB_mbstate_t;
+
+typedef struct _PDCLIB_charcodec *_PDCLIB_charcodec_t;
+typedef struct _PDCLIB_locale    *_PDCLIB_locale_t;
+typedef struct lconv              _PDCLIB_lconv_t;
+
+_PDCLIB_size_t _PDCLIB_mb_cur_max( void );
+
+/* -------------------------------------------------------------------------- */
+/* stdio                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/* Position / status structure for getpos() / fsetpos(). */
+typedef struct _PDCLIB_fpos
+{
+    _PDCLIB_int_fast64_t offset; /* File position offset */
+    _PDCLIB_mbstate_t    mbs;    /* Multibyte parsing state */
+} _PDCLIB_fpos_t;
+
+typedef struct _PDCLIB_fileops  _PDCLIB_fileops_t;
+typedef union  _PDCLIB_fd       _PDCLIB_fd_t;
+typedef struct _PDCLIB_file     _PDCLIB_file_t; // Rename to _PDCLIB_FILE?
+
+/* Status structure required by _PDCLIB_print(). */
+struct _PDCLIB_status_t
+{
+    int              base;   /* base to which the value shall be converted   */
+    _PDCLIB_int_fast32_t flags; /* flags and length modifiers                */
+    unsigned         n;      /* print: maximum characters to be written      */
+                             /* scan:  number matched conversion specifiers  */
+    unsigned         i;      /* number of characters read/written            */
+    unsigned         current;/* chars read/written in the CURRENT conversion */
+    char *           s;      /* *sprintf(): target buffer                    */
+                             /* *sscanf():  source string                    */
+    unsigned         width;  /* specified field width                        */
+    int              prec;   /* specified field precision                    */
+    _PDCLIB_file_t * stream; /* *fprintf() / *fscanf() stream         */
+    _PDCLIB_va_list  arg;    /* argument stack                               */
+};
+
+#endif

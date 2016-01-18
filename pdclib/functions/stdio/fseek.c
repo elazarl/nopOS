@@ -9,11 +9,11 @@
 #include <stdio.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-#include <_PDCLIB_glue.h>
-
-int fseek( struct _PDCLIB_file_t * stream, long offset, int whence )
+int _PDCLIB_fseek_unlocked( FILE * stream, long loffset, int whence )
 {
+    _PDCLIB_int64_t offset = loffset;
     if ( stream->status & _PDCLIB_FWRITE )
     {
         if ( _PDCLIB_flushbuffer( stream ) == EOF )
@@ -26,7 +26,22 @@ int fseek( struct _PDCLIB_file_t * stream, long offset, int whence )
     {
         stream->status &= ~ ( _PDCLIB_FREAD | _PDCLIB_FWRITE );
     }
+
+    if ( whence == SEEK_CUR )
+    {
+        whence  = SEEK_SET;
+        offset += _PDCLIB_ftell64_unlocked( stream );
+    }
+
     return ( _PDCLIB_seek( stream, offset, whence ) != EOF ) ? 0 : EOF;
+}
+
+int fseek( FILE * stream, long loffset, int whence )
+{
+    _PDCLIB_flockfile( stream );
+    int r = _PDCLIB_fseek_unlocked( stream, loffset, whence );
+    _PDCLIB_funlockfile( stream );
+    return r;
 }
 
 #endif
@@ -75,6 +90,16 @@ int main( void )
     TESTCASE( ftell( fh ) == 2 );
     TESTCASE( fseek( fh, 2, SEEK_SET ) == 0 );
     TESTCASE( fgetc( fh ) == teststring[2] );
+    /* PDCLIB-7: Check that we handle the underlying file descriptor correctly
+     *           in the SEEK_CUR case */
+    TESTCASE( fseek( fh, 10, SEEK_SET ) == 0 );
+    TESTCASE( ftell( fh ) == 10l );
+    TESTCASE( fseek( fh, 0, SEEK_CUR ) == 0 );
+    TESTCASE( ftell( fh ) == 10l );
+    TESTCASE( fseek( fh, 2, SEEK_CUR ) == 0 );
+    TESTCASE( ftell( fh ) == 12l );
+    TESTCASE( fseek( fh, -1, SEEK_CUR ) == 0 );
+    TESTCASE( ftell( fh ) == 11l );
     /* Checking error handling */
     TESTCASE( fseek( fh, -5, SEEK_SET ) == -1 );
     TESTCASE( fseek( fh, 0, SEEK_END ) == 0 );

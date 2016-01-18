@@ -10,6 +10,14 @@
 #include <stdarg.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
+
+int _PDCLIB_scanf_unlocked( const char * _PDCLIB_restrict format, ... )
+{
+    va_list ap;
+    va_start( ap, format );
+    return _PDCLIB_vfscanf_unlocked( stdin, format, ap );
+}
 
 int scanf( const char * _PDCLIB_restrict format, ... )
 {

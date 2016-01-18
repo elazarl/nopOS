@@ -8,16 +8,18 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #ifndef REGTEST
-#include <_PDCLIB_glue.h>
+#include <_PDCLIB_io.h>
+#include <threads.h>
 
-extern struct _PDCLIB_file_t * _PDCLIB_filelist;
+extern FILE * _PDCLIB_filelist;
 
-int fclose( struct _PDCLIB_file_t * stream )
+int fclose( FILE * stream )
 {
-    struct _PDCLIB_file_t * current = _PDCLIB_filelist;
-    struct _PDCLIB_file_t * previous = NULL;
+    FILE * current = _PDCLIB_filelist;
+    FILE * previous = NULL;
     /* Checking that the FILE handle is actually one we had opened before. */
     while ( current != NULL )
     {
@@ -32,8 +34,13 @@ int fclose( struct _PDCLIB_file_t * stream )
                     return EOF;
                 }
             }
+
+            /* Release mutex*/
+            mtx_destroy( &stream->lock );
+
             /* Close handle */
-            _PDCLIB_close( stream->handle );
+            stream->ops->close(stream->handle);
+
             /* Remove stream from list */
             if ( previous != NULL )
             {
@@ -58,7 +65,8 @@ int fclose( struct _PDCLIB_file_t * stream )
         previous = current;
         current = current->next;
     }
-    _PDCLIB_errno = _PDCLIB_EIO;
+
+    errno = EINVAL;
     return -1;
 }
 
@@ -70,8 +78,8 @@ int fclose( struct _PDCLIB_file_t * stream )
 int main( void )
 {
 #ifndef REGTEST
-    struct _PDCLIB_file_t * file1;
-    struct _PDCLIB_file_t * file2;
+    FILE * file1;
+    FILE * file2;
     remove( testfile1 );
     remove( testfile2 );
     TESTCASE( _PDCLIB_filelist == stdin );
@@ -81,7 +89,7 @@ int main( void )
     TESTCASE( _PDCLIB_filelist == file2 );
     TESTCASE( fclose( file2 ) == 0 );
     TESTCASE( _PDCLIB_filelist == file1 );
-    TESTCASE( ( file2 = fopen( testfile1, "w" ) ) != NULL );
+    TESTCASE( ( file2 = fopen( testfile2, "w" ) ) != NULL );
     TESTCASE( _PDCLIB_filelist == file2 );
     TESTCASE( fclose( file1 ) == 0 );
     TESTCASE( _PDCLIB_filelist == file2 );

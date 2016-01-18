@@ -11,9 +11,11 @@
 #include <limits.h>
 
 #ifndef REGTEST
+#include <_PDCLIB_io.h>
 
-int setvbuf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, char * _PDCLIB_restrict buf, int mode, size_t size )
+int setvbuf( FILE * _PDCLIB_restrict stream, char * _PDCLIB_restrict buf, int mode, size_t size )
 {
+    _PDCLIB_flockfile( stream );
     switch ( mode )
     {
         case _IONBF:
@@ -29,6 +31,7 @@ int setvbuf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, char * _PDCLIB_res
                 /* PDCLib only supports buffers up to INT_MAX in size. A size
                    of zero doesn't make sense.
                 */
+                _PDCLIB_funlockfile( stream );
                 return -1;
             }
             if ( buf == NULL )
@@ -47,6 +50,7 @@ int setvbuf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, char * _PDCLIB_res
                     if ( ( buf = (char *) malloc( size ) ) == NULL )
                     {
                         /* Out of memory error. */
+                        _PDCLIB_funlockfile( stream );
                         return -1;
                     }
                     /* This buffer must be free()d on fclose() */
@@ -58,12 +62,14 @@ int setvbuf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, char * _PDCLIB_res
             break;
         default:
             /* If mode is something else than _IOFBF, _IOLBF or _IONBF -> exit */
+            _PDCLIB_funlockfile( stream );
             return -1;
     }
     /* Deleting current buffer mode */
     stream->status &= ~( _IOFBF | _IOLBF | _IONBF );
     /* Set user-defined mode */
     stream->status |= mode;
+    _PDCLIB_funlockfile( stream );
     return 0;
 }
 
@@ -71,9 +77,10 @@ int setvbuf( struct _PDCLIB_file_t * _PDCLIB_restrict stream, char * _PDCLIB_res
 
 #ifdef TEST
 #include <_PDCLIB_test.h>
-
 #include <errno.h>
-
+#ifndef REGTEST
+#include <_PDCLIB_io.h>
+#endif
 #define BUFFERSIZE 500
 
 int main( void )

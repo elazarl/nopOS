@@ -8,11 +8,7 @@
 
 #ifndef _PDCLIB_STDINT_H
 #define _PDCLIB_STDINT_H _PDCLIB_STDINT_H
-
-#ifndef _PDCLIB_INT_H
-#define _PDCLIB_INT_H _PDCLIB_INT_H
 #include <_PDCLIB_int.h>
-#endif
 
 /* 7.18.1.1 Exact-width integer types. */
 
@@ -157,8 +153,11 @@ typedef _PDCLIB_uintmax_t uintmax_t;
 
 #define SIZE_MAX _PDCLIB_SIZE_MAX
 
+#ifndef _PDCLIB_WCHAR_MIN_MAX_DEFINED
+#define _PDCLIB_WCHAR_MIN_MAX_DEFINED
 #define WCHAR_MIN _PDCLIB_WCHAR_MIN
 #define WCHAR_MAX _PDCLIB_WCHAR_MAX
+#endif
 
 #define WINT_MIN _PDCLIB_WINT_MIN
 #define WINT_MAX _PDCLIB_WINT_MAX

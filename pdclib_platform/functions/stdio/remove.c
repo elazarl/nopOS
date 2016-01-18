@@ -14,16 +14,14 @@
 #ifndef REGTEST
 
 #include <string.h>
-
 #include <errno.h>
 
 extern struct _PDCLIB_file_t * _PDCLIB_filelist;
 
-extern int unlink( const char * pathname );
-
 int remove( const char * pathname )
 {
-    __builtin_abort();
+    errno = ENOTSUP;
+    return 1;
 }
 
 #endif

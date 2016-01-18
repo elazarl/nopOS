@@ -12,7 +12,9 @@
 
 #ifndef REGTEST
 
-int vsprintf( char * _PDCLIB_restrict s, const char * _PDCLIB_restrict format, va_list arg )
+int vsprintf( char * _PDCLIB_restrict s, 
+              const char * _PDCLIB_restrict format, 
+              va_list arg )
 {
     return vsnprintf( s, SIZE_MAX, format, arg ); /* TODO: Replace with a non-checking call */
 }
@@ -22,7 +24,8 @@ int vsprintf( char * _PDCLIB_restrict s, const char * _PDCLIB_restrict format, v
 #ifdef TEST
 #define _PDCLIB_FILEID "stdio/vsprintf.c"
 #define _PDCLIB_STRINGIO
-
+#include <stdint.h>
+#include <stddef.h>
 #include <_PDCLIB_test.h>
 
 static int testprintf( char * s, const char * format, ... )

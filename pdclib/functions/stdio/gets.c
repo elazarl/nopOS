@@ -9,29 +9,28 @@
 #include <stdio.h>
 
 #ifndef REGTEST
-
-#define _PDCLIB_GLUE_H _PDCLIB_GLUE_H
-#include <_PDCLIB_glue.h>
+#include <_PDCLIB_io.h>
+#include <stdint.h>
 
 char * gets( char * s )
 {
+    _PDCLIB_flockfile( stdin );
     if ( _PDCLIB_prepread( stdin ) == EOF )
     {
+        _PDCLIB_funlockfile( stdin );
         return NULL;
     }
     char * dest = s;
-    while ( ( *dest = stdin->buffer[stdin->bufidx++] ) != '\n' )
-    {
-        ++dest;
-        if ( stdin->bufidx == stdin->bufend )
-        {
-            if ( _PDCLIB_fillbuffer( stdin ) == EOF )
-            {
-                break;
-            }
-        }
+    
+    dest += _PDCLIB_getchars( dest, SIZE_MAX, '\n', stdin );
+    _PDCLIB_funlockfile( stdin );
+
+    if(*(dest - 1) == '\n') {
+        *(--dest) = '\0';
+    } else {
+        *dest = '\0';
     }
-    *dest = '\0';
+
     return ( dest == s ) ? NULL : s;
 }
 

@@ -5,8 +5,11 @@
 #include "console.hh"
 #include "smp.hh"
 #include "memory.hh"
-#include "cruntime.h"
+#include "./3rdparty/linenoise/linenoise_dep.h"
+#include "./3rdparty/linenoise/linenoise.h"
 #include <string.h>
+#include <immintrin.h>
+#include <math.h> 
 
 struct printer {
     void operator()(const char *fmt, ...)
@@ -58,6 +61,29 @@ void fill_pages(void *pages[], int n)
 }
 int main(int ac, char **av)
 {
+    char *line;
+    /*auto cr0 = processor::read_cr0();
+    processor::write_cr0(cr0|processor::cr0_ts);
+    char buf[100];
+    snprintf(buf, sizeof(buf), "got %d\n", 12);
+    __attribute__((aligned(128))) uint64_t ymm[8];
+    readline("X\n");
+    asm volatile ("vmovaps (%0),%%ymm0" :: "r" (ymm));
+    readline("Y\n");
+    typedef short v8si __attribute__ ((vector_size (8)));
+    v8si xxx = {};
+    xxx = __builtin_ia32_paddw(xxx, xxx);
+    readline("Z\n");
+    printer{}(buf);*/
+    char buf[100];
+    buf[sizeof(buf)-1] = '\0';
+    snprintf(buf, sizeof(buf)-1, "got %d\n", 1234);
+    printer{}(buf);
+    while ((line = linenoise("x64>")) != NULL) {
+        printer{}("\nhoho: %s\n", line);
+        _free(line);
+    }
+    return 0;
     mmu::vaddr addr{0xfffffff100};
     auto pml4 = processor::read_cr3().PML4ptr();
     pml4->print(printer{});
