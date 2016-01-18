@@ -70,6 +70,8 @@ $(OUT)/loader.bin: $(OUT)/boot32.o loader32.ld
 	$(call quiet, $(LD) -nostartfiles -static -nodefaultlibs -o $@ \
 	                $(filter-out %.bin, $(^:%.ld=-T %.ld)), LD $@)
 
+$(OUT)/boot32.o: $(OUT)/loader.elf
+
 $(OUT)/fastlz.o: fastlz/fastlz.cc
 	$(makedir)
 	$(call quiet, $(CXX) $(CXXFLAGS) -O2 -m32 -o $@ -c fastlz/fastlz.cc, CXX $@)
