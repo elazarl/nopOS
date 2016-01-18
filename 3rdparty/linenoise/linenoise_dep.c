@@ -52,20 +52,4 @@ int isatty(int fd) {
     return 1;
 }
 
-#include "console.hh"
 
-ssize_t write(int fd, const void *buf, size_t count) {
-    int i;
-    const char *b = buf;
-    for (i=0; i<count; i++) {
-        isa_serial_console_putchar(b[i]);
-    }
-}
-
-ssize_t read(int fd, void *buf, size_t count) {
-    int i;
-    char *b = buf;
-    for (i=0; i<count; i++) {
-        b[i] = isa_serial_console_readch();
-    }
-}

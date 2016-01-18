@@ -17,6 +17,8 @@ STRIP = strip
 quiet = $(if $V, $1, @echo " $2"; $1)
 very-quiet = $(if $V, $1, @$1)
 
+PDCLIB_FLAGS := -nostdinc -isystem ./pdclib/internals -isystem ./pdclib/includes -isystem ./pdclib_platform/includes
+
 include acpi.mk
 acpi = $(patsubst %.c, %.o, $(acpi-source))
 acpi-defines = -DACPI_MACHINE_WIDTH=64 -DACPI_USE_LOCAL_CACHE
@@ -25,14 +27,14 @@ $(acpi-objects): CFLAGS += $(acpi-defines) -I acpica/source/include -fno-strict-
 
 include pdclib.mk
 pdclib-objects = $(pdclib:%=$(OUT)/%)
-CFLAGS += -nostdinc -isystem ./pdclib/internals -isystem ./pdclib/includes -isystem ./pdclib_platform/includes
+$(pdclib-objects): CFLAGS += $(PDCLIB_FLAGS)
 #$(pdclib-objects): CFLAGS += -nostdinc -isystem ./pdclib/internals -isystem ./pdclib/includes
 
 objects += $(acpi-objects) $(pdclib-objects)
 
 _objects += console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
 	   xen.o entry-xen.o pci.o clock.o runtime.o acpi.o __ctype_b_loc.o smp.o apic.o \
-	   pagetable.o logger.o main.o  # linenoise.o linenoise_dep.o vsscanf.o
+	   pagetable.o logger.o stdio.o main.o  # linenoise.o linenoise_dep.o
 
 objects += $(_objects:%=$(OUT)/%)
 

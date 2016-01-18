@@ -13,8 +13,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-int brk( void * );
-void * sbrk( intptr_t );
+int brk( void *addr ) { __builtin_abort(); }
+void * sbrk( intptr_t increment ) { __builtin_abort(); }
 
 #ifndef _PDCLIB_GLUE_H
 #define _PDCLIB_GLUE_H _PDCLIB_GLUE_H

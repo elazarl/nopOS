@@ -14,7 +14,7 @@
 
 #ifndef REGTEST
 
-extern char * * environ;
+char *environ[] = { NULL };
 
 char * getenv( const char * name )
 {

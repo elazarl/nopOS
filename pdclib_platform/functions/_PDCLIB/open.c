@@ -15,77 +15,9 @@
 #ifndef REGTEST
 #include <_PDCLIB_glue.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-#include "/usr/include/errno.h"
-
 int _PDCLIB_open( char const * const filename, unsigned int mode )
 {
-    /* This is an example implementation of _PDCLIB_open() fit for use with
-       POSIX kernels.
-    */
-    int osmode;
-    switch ( mode & ( _PDCLIB_FREAD | _PDCLIB_FWRITE | _PDCLIB_FAPPEND | _PDCLIB_FRW ) )
-    {
-        case _PDCLIB_FREAD: /* "r" */
-            osmode = O_RDONLY;
-            break;
-        case _PDCLIB_FWRITE: /* "w" */
-            osmode = O_WRONLY | O_CREAT | O_TRUNC;
-            break;
-        case _PDCLIB_FAPPEND: /* "a" */
-            osmode = O_WRONLY | O_APPEND | O_CREAT;
-            break;
-        case _PDCLIB_FREAD | _PDCLIB_FRW: /* "r+" */
-            osmode = O_RDWR;
-            break;
-        case _PDCLIB_FWRITE | _PDCLIB_FRW: /* "w+" */
-            osmode = O_RDWR | O_CREAT | O_TRUNC;
-            break;
-        case _PDCLIB_FAPPEND | _PDCLIB_FRW: /* "a+" */
-            osmode = O_RDWR | O_APPEND | O_CREAT;
-            break;
-        default: /* Invalid mode */
-            return -1;
-    }
-    int rc;
-    if ( osmode & O_CREAT )
-    {
-        rc = open( filename, osmode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH );
-    }
-    else
-    {
-        rc = open( filename, osmode );
-    }
-    if ( rc == -1 )
-    {
-        switch ( errno )
-        {
-            case EACCES:
-            case EFAULT:
-            case EINTR:
-            case EISDIR:
-            case ELOOP:
-            case EMFILE:
-            case ENAMETOOLONG:
-            case ENFILE:
-            case ENODEV:
-            case ENOENT:
-            case ENOMEM:
-            case ENOSPC:
-            case ENOTDIR:
-            case EOVERFLOW:
-            case EROFS:
-            case ETXTBSY:
-                _PDCLIB_errno = _PDCLIB_EIO;
-            default:
-                _PDCLIB_errno = _PDCLIB_EUNKNOWN;
-        }
-    }
-    return rc;
+    __builtin_abort();
 }
 
 #endif

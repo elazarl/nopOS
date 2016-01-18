@@ -11,74 +11,14 @@
 #ifndef REGTEST
 #include <_PDCLIB_glue.h>
 
-#include </usr/include/errno.h>
+#include <errno.h>
 
 extern int unlink( const char * pathname );
 extern int link( const char * old, const char * new );
 
 int _PDCLIB_rename( const char * old, const char * new )
 {
-    /* Note that the behaviour if new file exists is implementation-defined.
-       There is nothing wrong with either overwriting it or failing the
-       operation, but you might want to document whichever you chose.
-       This example fails if new file exists.
-    */
-    if ( link( old, new ) == 0 )
-    {
-        if ( unlink( old ) == EOF )
-        {
-            switch ( errno )
-            {
-                case EACCES:
-                case EFAULT:
-                case EIO:
-                case EISDIR:
-                case ELOOP:
-                case ENAMETOOLONG:
-                case ENOENT:
-                case ENOMEM:
-                case ENOTDIR:
-                case EPERM:
-                case EROFS:
-                    _PDCLIB_errno = _PDCLIB_EIO;
-                    break;
-                default:
-                    _PDCLIB_errno = _PDCLIB_EUNKNOWN;
-                    break;
-            }
-            return -1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-    else
-    {
-        switch ( errno )
-        {
-            case EACCES:
-            case EEXIST:
-            case EFAULT:
-            case EIO:
-            case ELOOP:
-            case EMLINK:
-            case ENAMETOOLONG:
-            case ENOENT:
-            case ENOMEM:
-            case ENOSPC:
-            case ENOTDIR:
-            case EPERM:
-            case EROFS:
-            case EXDEV:
-                _PDCLIB_errno = _PDCLIB_EIO;
-                break;
-            default:
-                _PDCLIB_errno = _PDCLIB_EUNKNOWN;
-                break;
-        }
-        return EOF;
-    }
+    __builtin_abort();
 }
 
 #endif

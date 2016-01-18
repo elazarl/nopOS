@@ -58,9 +58,6 @@ void fill_pages(void *pages[], int n)
 }
 int main(int ac, char **av)
 {
-    readline("running clac");
-    asm volatile ("clac");
-    readline("done running clac");
     mmu::vaddr addr{0xfffffff100};
     auto pml4 = processor::read_cr3().PML4ptr();
     pml4->print(printer{});

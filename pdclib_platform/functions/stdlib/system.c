@@ -17,20 +17,7 @@ extern int wait( int * status );
 
 int system( const char * string )
 {
-    char const * const argv[] = { "sh", "-c", (char const * const)string, NULL };
-    if ( string != NULL )
-    {
-        int pid = fork();
-        if ( pid == 0 )
-        {
-            execve( "/bin/sh", (char * * const)argv, NULL );
-        }
-        else if ( pid > 0 )
-        {
-            while( wait( NULL ) != pid );
-        }
-    }
-    return -1;
+    __builtin_abort();
 }
 
 #ifdef TEST

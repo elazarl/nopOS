@@ -13,44 +13,13 @@
 #include <_PDCLIB_glue.h>
 #endif
 
-#include "/usr/include/errno.h"
+#include <errno.h>
 
 extern _PDCLIB_int64_t lseek64( int fd, _PDCLIB_int64_t offset, int whence );
 
 _PDCLIB_int64_t _PDCLIB_seek( struct _PDCLIB_file_t * stream, _PDCLIB_int64_t offset, int whence )
 {
-    switch ( whence )
-    {
-        case SEEK_SET:
-        case SEEK_CUR:
-        case SEEK_END:
-            /* EMPTY - OK */
-            break;
-        default:
-            _PDCLIB_errno = _PDCLIB_EINVAL;
-            return EOF;
-            break;
-    }
-    _PDCLIB_int64_t rc = lseek64( stream->handle, offset, whence );
-    if ( rc != EOF )
-    {
-        stream->ungetidx = 0;
-        stream->bufidx = 0;
-        stream->bufend = 0;
-        stream->pos.offset = rc;
-        return rc;
-    }
-    switch ( errno )
-    {
-        case EBADF:
-        case EFAULT:
-            _PDCLIB_errno = _PDCLIB_EIO;
-            break;
-        default:
-            _PDCLIB_errno = _PDCLIB_EUNKNOWN;
-            break;
-    }
-    return EOF;
+    __builtin_abort();
 }
 
 #ifdef TEST

@@ -19,7 +19,7 @@ extern int close( int fd );
 
 int _PDCLIB_close( int fd )
 {
-    return close( fd );
+    return 0;
 }
 
 #endif

@@ -19,7 +19,7 @@ extern void _exit( int status ) _PDCLIB_NORETURN;
 
 void _PDCLIB_Exit( int status )
 {
-    _exit( status );
+    __builtin_abort();
 }
 
 #endif

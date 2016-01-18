@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <cstdarg>
-#include <alloca.h>
 #include "types.h"
 #include "console.hh"
 #include <string.h>
@@ -57,7 +56,7 @@ void premain()
     // copy to stack so we don't free it now
     auto omb = *osv_multiboot_info;
     auto mb = omb.mb;
-    char *e820_buffer = reinterpret_cast<char*>(alloca(mb.mmap_length));
+    char *e820_buffer = reinterpret_cast<char*>(__builtin_alloca(mb.mmap_length));
     auto e820_size = mb.mmap_length;
     //char *mbe820 = reinterpret_cast<char*>(mb.mmap_addr);
     memcpy(e820_buffer, reinterpret_cast<void*>(mb.mmap_addr), e820_size);
