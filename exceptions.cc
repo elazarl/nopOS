@@ -148,8 +148,6 @@ void general_protection(exception_frame* ef)
     abort();
 }
 
-extern "C" void abort() { __builtin_abort(); }
-
 #define DUMMY_HANDLER(x) \
      extern "C" void x(exception_frame* ef); void x(exception_frame *ef) { \
          page_fault_error_code e = ef->get_page_fault_error(); \

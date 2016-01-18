@@ -21,13 +21,18 @@ include acpi.mk
 acpi = $(patsubst %.c, %.o, $(acpi-source))
 acpi-defines = -DACPI_MACHINE_WIDTH=64 -DACPI_USE_LOCAL_CACHE
 acpi-objects = $(acpi:%=$(OUT)/%)
-$(acpi-objects): CFLAGS += -I acpica/source/include -fno-strict-aliasing -Wno-strict-aliasing
+$(acpi-objects): CFLAGS += $(acpi-defines) -I acpica/source/include -fno-strict-aliasing -Wno-strict-aliasing
 
-objects += $(acpi-objects)
+include pdclib.mk
+pdclib-objects = $(pdclib:%=$(OUT)/%)
+CFLAGS += -nostdinc -isystem ./pdclib/internals -isystem ./pdclib/includes -isystem ./pdclib_platform/includes
+#$(pdclib-objects): CFLAGS += -nostdinc -isystem ./pdclib/internals -isystem ./pdclib/includes
 
-_objects += print.o console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
-	   xen.o entry-xen.o pci.o clock.o runtime.o cruntime.o acpi.o __ctype_b_loc.o smp.o apic.o \
-	   pagetable.o logger.o main.o # linenoise.o linenoise_dep.o vsscanf.o
+objects += $(acpi-objects) $(pdclib-objects)
+
+_objects += console.o arch-setup.o printf.o entry.o exceptions.o arch-cpu.o memory.o cpuid.o \
+	   xen.o entry-xen.o pci.o clock.o runtime.o acpi.o __ctype_b_loc.o smp.o apic.o \
+	   pagetable.o logger.o main.o  # linenoise.o linenoise_dep.o vsscanf.o
 
 objects += $(_objects:%=$(OUT)/%)
 
@@ -137,20 +142,13 @@ $(OUT)/%.o: %.s
 	$(q-build-s)
 
 ASFLAGS += -I$(OUT)
-INCLUDES = $(local-includes) -I. -Iinclude 
-INCLUDES += -isystem include/glibc-compat
-INCLUDES += -isystem include/api
-INCLUDES += -isystem include/api/x64
-EXTRA_FLAGS = -D__OSV_CORE__ -DOSV_KERNEL_BASE=$(kernel_base)
+INCLUDES = -I.
+EXTRA_FLAGS = -DOSV_KERNEL_BASE=$(kernel_base)
 EXTRA_LIBS =
-COMMON = $(autodepend) -g -Wall -Wno-pointer-arith $(CFLAGS_WERROR) -Wformat=0 -Wno-format-security \
-	-D __BSD_VISIBLE=1 -U _FORTIFY_SOURCE -fno-stack-protector $(INCLUDES) \
-	$(kernel-defines) \
-	-fno-omit-frame-pointer $(compiler-specific) \
-	-include compiler/include/intrinsics.hh \
-	$(do-sys-includes) \
-	$(arch-cflags) $(conf-opt) $(acpi-defines) $(tracing-flags) $(gcc-sysroot) \
-	$(configuration) -D__OSV__ -D__XEN_INTERFACE_VERSION__="0x00030207" -DARCH_STRING=$(ARCH_STR) $(EXTRA_FLAGS)
+COMMON = $(autodepend) -g -Wall -Wno-pointer-arith -Wformat=0 -Wno-format-security \
+	-U _FORTIFY_SOURCE -fno-stack-protector $(INCLUDES) \
+	-fno-omit-frame-pointer \
+	-D__XEN_INTERFACE_VERSION__="0x00030207" -DARCH_STRING=$(ARCH_STR) $(EXTRA_FLAGS)
 
 CXXFLAGS = -fno-rtti -fno-exceptions -std=gnu++11 $(COMMON)
 CFLAGS += -std=gnu99 $(COMMON)

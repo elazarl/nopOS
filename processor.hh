@@ -434,6 +434,11 @@ inline void fldcw(uint16_t addr)
     asm volatile ("fldcw %0" : : "m" (addr));
 }
 
+inline void invlpg(void *addr)
+{
+    asm volatile("invlpg (%0)" : : "r" (addr) : "memory");
+}
+
 struct task_state_segment {
     u32 reserved0;
     u64 rsp[3];
