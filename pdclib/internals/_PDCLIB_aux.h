@@ -105,7 +105,7 @@
 
 #if defined(__GNUC__)
     #define _PDCLIB_GCC_MIN(maj, min) \
-        ((__GNUC__ > maj) || (__GNUC__ == maj && __GNUC_MINOR__ >= min))
+        ((__GNUC__ > maj) || ((__GNUC__ == maj) && (__GNUC_MINOR__ >= min)))
 #else
     #define _PDCLIB_GCC_MIN(maj, min) (0)
 #endif
@@ -121,7 +121,7 @@
         (_PDCLIB_HAS_BUILTIN(x) || _PDCLIB_GCC_MIN(gccmin, gccmaj))
 
 #define _PDCLIB_GCC_ATTRIBUTE(x, gccmaj, gccmin) \
-        (_PDCLIB_HAS_ATTRIBUTE(x) || _PDCLIB_GCC_MIN(gccmin, gccmaj))
+        (_PDCLIB_GCC_MIN(gccmin, gccmaj))
 
 /* Extension & Language feature detection */
 
